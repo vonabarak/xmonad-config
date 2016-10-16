@@ -1,0 +1,133 @@
+#!/bin/bash
+
+# xmonad command sending client
+XMONAD_SEND="$HOME/.xmonad/xmonad-send"
+
+# directory to store pidfiles
+PID_DIR="/tmp/xmonad/$(whoami)"
+mkdir -p ${PID_DIR}
+
+kde_env() {
+    kstartupconfig5
+    kapplymousetheme
+    xprop -root -f KDE_FULL_SESSION 8t -set KDE_FULL_SESSION true
+    xprop -root -f KDE_SESSION_VERSION 32c -set KDE_SESSION_VERSION 5
+    /usr/lib64/libexec/ksyncdbusenv
+    LD_BIND_NOW=true /usr/lib64/libexec/kf5/start_kdeinit_wrapper --kded +kcminit
+    akonadictl start
+    balooctl enable
+    #kwrapper5 /usr/bin/ksmserver /bin/true
+}
+
+_kill_by_pidfile() {
+    PIDFILE="${PID_DIR}/$(basename ${1}).pid"
+    A=$(echo $1 | gawk '{print $1}')
+    if [[ -f ${PIDFILE} ]]; then
+        B=$(ps p `cat $PIDFILE` | grep  $A | awk '{print $5}')
+        if [[ $A == $B ]]; then
+            kill `cat $PIDFILE`
+        else
+            echo "PID \"$(echo ${PIDFILE})\" do not match with processname \"${1}\". Pidfile will be removed."
+        fi
+        rm ${PIDFILE}
+    else
+        echo "No such pidfile ${PIDFILE}"
+    fi
+}
+
+_switch() {
+    # Run application if it is not running
+    # or kill appilication by pid file in other case
+    PIDFILE="${PID_DIR}/$(basename ${1}).pid"
+    A=$(echo $1 | gawk '{print $1}')
+    if [[ -f ${PIDFILE} ]]; then
+        B=$(ps p `cat $PIDFILE` | grep  $A | awk '{print $5}')
+        if [[ $A == $B ]]; then
+            kill `cat $PIDFILE`
+        else
+            echo "PID \"$(echo ${PIDFILE})\" do not match with processname \"${1}\". Pidfile will be removed."
+        fi
+        rm ${PIDFILE}
+    else
+        $1 &
+        echo $! > ${PIDFILE}
+    fi
+}
+    
+_restart() {
+    # if there is pidfile then try to kill application by pid
+    # and remove pidfile. 
+    A=$(echo $1 | gawk '{print $1}')
+    PIDFILE=${PID_DIR}/${A}.pid
+    if [[ -e $PIDFILE ]]; then
+        B=$(ps p `cat $PIDFILE` | grep  $A | awk '{print $5}')
+        if [[ $A == $B ]]; then
+            kill `cat $PIDFILE`
+        fi
+        rm $PIDFILE
+    fi
+    # run application
+    $1 &
+    # create pidfile
+    echo $! > $PIDFILE
+}
+
+_respawn() {
+    # if there is pidfile and matching pid belongs to expected application
+    # then nothing to do. Start application in other case
+    A=$(echo $1 | gawk '{print $1}')
+    PIDFILE=${PID_DIR}/$(basename ${A}).pid
+    if [[ -e $PIDFILE ]]; then
+        B=$(ps p `cat $PIDFILE` | grep  $A | awk '{print $5}')
+        if [[ $A == $B ]]; then
+            echo "$A already running"
+        else
+            rm $PIDFILE
+            # run application
+            $1 &
+            # create pidfile
+            echo $! > $PIDFILE
+        fi
+    else
+        # run application
+        $1 &
+        # create pidfile
+        echo $! > $PIDFILE
+    fi
+}
+
+case $1 in
+    restart)
+        _restart $2
+        ;;
+    respawn)
+        _respawn $2
+        ;;
+    kill)
+        _kill_by_pidfile $2
+        ;;
+    switch)
+        _switch $2
+        ;;
+    *)
+        feh  --bg-fill ${HOME}/.xmonad/wallpaper
+        _restart conky
+        #_restart 'trayer --edge top --align left --widthtype pixel --width 299 --heighttype pixel --height 16  --SetDockType true --transparent true --alpha 0 --tint 0x000000 '
+        #_restart 'trayer --edge top --align left --distance 200 --widthtype pixel --width 299 --heighttype pixel --height 16  --SetDockType true --transparent true --alpha 0 --tint 0x000000 '
+        _restart 'compton'
+        _respawn 'stalonetray -bg black -i 16 -s 16 --geometry 19x1'
+        #_restart 'pcmanfm --desktop -p LXDE'
+        _restart 'xscreensaver -no-splash'
+        #_restart nm-applet
+        _respawn urxvtd
+
+        # read X resources
+        xrdb ~/.Xresources
+        kde_env
+
+        # setting wmname for java applications
+        # wmname LG3D
+
+        ;;
+
+esac
