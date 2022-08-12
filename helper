@@ -9,11 +9,11 @@ _kill_by_pidfile() {
     PIDFILE="${PID_DIR}/$(basename ${1}).pid"
     A=$(echo $1 | awk '{print $1}')
     if [[ -f ${PIDFILE} ]]; then
-        B=$(ps p `cat $PIDFILE` | grep  $A | awk '{print $5}')
+        B=$(ps p `cat $PIDFILE` | grep $A | awk '{print $5}')
         if [[ $A == $B ]]; then
             kill `cat $PIDFILE`
         else
-            echo "PID \"$(echo ${PIDFILE})\" do not match with processname \"${1}\". Pidfile will be removed."
+            echo "PID \"$(cat ${PIDFILE})\" do not match with processname \"${1}\". Pidfile will be removed."
         fi
         rm ${PIDFILE}
     else
@@ -26,11 +26,11 @@ _switch() {
     # or kill appilication by pid file in other case
     PIDFILE="${PID_DIR}/$@.pid"
     if [[ -f "${PIDFILE}" ]]; then
-        B=$(ps p `cat "$PIDFILE"` | grep  $1 | awk '{print $5}')
+        B=$(ps p `cat "$PIDFILE"` | grep $1 | awk '{print $5}')
         if [[ $1 == $B ]]; then
             kill `cat "$PIDFILE"`
         else
-            echo "PID \"$(echo ${PIDFILE})\" do not match with processname \"${1}\". Pidfile will be removed."
+            echo "PID \"$(cat ${PIDFILE})\" do not match with processname \"${1}\". Pidfile will be removed."
         fi
         rm "${PIDFILE}"
     else
@@ -44,7 +44,7 @@ _restart() {
     # and remove pidfile. 
     PIDFILE="${PID_DIR}/$@.pid"
     if [[ -e "${PIDFILE}" ]]; then
-        B=$(ps p `cat "${PIDFILE}"` | grep  $1 | awk '{print $5}')
+        B=$(ps p `cat "${PIDFILE}"` | grep $1 | awk '{print $5}')
         if [[ $1 == $B ]]; then
             kill `cat "${PIDFILE}"`
         fi
@@ -61,7 +61,7 @@ _respawn() {
     # then nothing to do. Start application in other case
     PIDFILE="${PID_DIR}/$@.pid"
     if [[ -e "${PIDFILE}" ]]; then
-        B=$(ps p `cat "${PIDFILE}"` | grep  $1 | awk '{print $5}')
+        B=$(ps p `cat "${PIDFILE}"` | grep $1 | awk '{print $5}')
         if [[ $1 == $B ]]; then
             echo "$@ already running"
         else
