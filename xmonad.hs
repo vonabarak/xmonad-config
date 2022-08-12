@@ -2,6 +2,7 @@
 import Control.Concurrent (threadDelay)
 import Data.Monoid
 import Data.Ratio
+import GHC.IO.Handle.Types ( Handle )
 import Graphics.X11.ExtraTypes.XF86
 import System.Exit
 import System.IO (hPutStrLn)
@@ -15,20 +16,19 @@ import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.InsertPosition
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.ManageHelpers
-import XMonad.Hooks.ServerMode
-import XMonad.Hooks.SetWMName
+import XMonad.Hooks.ServerMode ( serverModeEventHook )
+import XMonad.Hooks.SetWMName ( setWMName )
 import XMonad.Layout.Fullscreen
 import XMonad.Layout.GridVariants
-import XMonad.Layout.LayoutHints
-import XMonad.Layout.Monitor
+import XMonad.Layout.LayoutHints ( layoutHints )
 import XMonad.Layout.NoBorders
-import XMonad.Layout.PerWorkspace
+import XMonad.Layout.PerWorkspace ( onWorkspace )
 import XMonad.Layout.Tabbed
 import XMonad.Prompt
-import XMonad.Prompt.RunOrRaise
-import XMonad.Prompt.XMonad
+import XMonad.Prompt.RunOrRaise ( runOrRaisePrompt )
+import XMonad.Prompt.XMonad ( xmonadPrompt )
 import XMonad.Util.ClickableWorkspaces (clickablePP)
-import XMonad.Util.Cursor
+import XMonad.Util.Cursor ( setDefaultCursor )
 import XMonad.Util.Run (spawnPipe)
 
 import qualified Language.Haskell.Interpreter  as I
@@ -60,6 +60,7 @@ myFocusFollowsMouse :: Bool
 myFocusFollowsMouse = True
 
 -- Width of the window border in pixels.
+myBorderWidth :: Dimension
 myBorderWidth   = 1
 
 -- modMask lets you specify which modkey you want to use. The default
@@ -67,6 +68,7 @@ myBorderWidth   = 1
 -- ("right alt"), which does not conflict with emacs keybindings. The
 -- "windows key" is usually mod4Mask.
 --
+myModMask :: KeyMask
 myModMask       = mod4Mask
 
 -- The default number of workspaces (virtual screens) and their names.
@@ -75,26 +77,11 @@ myModMask       = mod4Mask
 -- of this list.
 --
 -- A tagging example:
---
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
---
+myWorkspaces :: [String]
 myWorkspaces    = [ "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
                   , "q", "w", "e", "r", "t", "y", "u", "i", "o", "p"
                   ]
-
--------------------------------------------------------------------------
--- Layouts:
-
--- You can specify and transform your layouts by modifying these values.
--- If you change layout bindings be sure to use 'mod-shift-space' after
--- restarting (with 'mod-q') to reset your layout state to the new
--- defaults, as xmonad preserves your old layout settings by default.
---
--- The available layouts.  Note that each layout is separated by |||,
--- which denotes layout choice.
---
---myLayout = tiled ||| Mirror tiled ||| Full
-
 
 myTabConfig :: Theme
 myTabConfig = def
@@ -134,7 +121,6 @@ myXPConfig = def
 --        nmaster = 1
 --        delta   = 2/100
 --        ratio   = 1/2
-
 myLayout = onWorkspace "1" (avoidStruts (noBorders Full)) $
            onWorkspace "0" (noBorders (fullscreenFull Full)) $
            onWorkspace "q" (avoidStruts (noBorders tiled)) $
@@ -146,41 +132,38 @@ myLayout = onWorkspace "1" (avoidStruts (noBorders Full)) $
   where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
-    
      -- The default number of windows in the master pane
      nmaster = 1
-    
      -- Default proportion of screen occupied by master pane
      ratio   = 70/100
-    
      -- Percent of screen to increment by when resizing panes
      delta   = 3/100
 
-
+-- Eval prompt.
+-- evaluate any haskell expression by pressing mod-shift-x
 data EvalPrompt = EvalPrompt
 
 instance XPrompt EvalPrompt where
   showXPrompt = const "haskell> "
   commandToComplete _ = id
   completionFunction _ s = io $ do
-    res <- I.runInterpreter $ do
-            I.setImports ["Prelude", "Data.Ratio", "XMonad", "XMonad.Core"]
-            I.eval s
+    res <- I.runInterpreter $ do 
+        I.setImports ["Prelude", "Data.Ratio", "XMonad", "XMonad.Core"]
+        I.eval s
     case res of
-      Left err -> return [show err]
-      Right s -> return [s]
+        Left err -> return [show err]
+        Right s -> return [s]
 
+evalPrompt :: X ()
 evalPrompt = do
-  uninstallSignalHandlers
-  mkXPromptWithModes [XPT EvalPrompt] myXPConfig
-  installSignalHandlers
+    uninstallSignalHandlers
+    mkXPromptWithModes [XPT EvalPrompt] myXPConfig
+    installSignalHandlers
 
-
-------------------------------------------------------------------------
 -- Key bindings. Add, modify or remove key bindings here.
 -- the list of kesyms may be found at /usr/include/X11/keysymdef.h
+myKeys :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
 myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
-
     -- launch a terminal
     [ ((modm,               xK_Return), spawn $ XMonad.terminal conf)
 
@@ -259,7 +242,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- Restart xmonad
     , ((modm              , xK_z     ), spawn "xmonad --recompile; xmonad --restart")
-    
+
     -- Various useful bindings
     , ((modm              , xK_F1), spawn $ helper ++ " switch pavucontrol-qt")
     , ((modm              , xK_F8), spawn "wall Hello!")
@@ -297,10 +280,8 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     ]
 
     ++
-    --
     -- mod-[1..9], Switch to workspace N
     -- mod-shift-[1..9], Move client to workspace N
-    --
     [((m .|. modm, k), windows $ f i)
         | (i, k) <- zip (XMonad.workspaces conf) [
         xK_1, xK_2, xK_3, xK_4, xK_5, xK_6, xK_7, xK_8, xK_9, xK_0,
@@ -308,35 +289,27 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
         ]
         , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
     ++
-    --
-    --mod-{w,e,r}, Switch to physical/Xinerama screens 1, 2, or 3
-    --mod-shift-{w,e,r}, Move client to screen 1, 2, or 3
-    --
+    --mod-{a,s,d}, Switch to physical/Xinerama screens 1, 2, or 3
+    --mod-shift-{a,s,d}, Move client to screen 1, 2, or 3
     [((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
         | (key, sc) <- zip [xK_a, xK_s, xK_d] [0..]
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
 
-------------------------------------------------------------------------
 -- Mouse bindings: default actions bound to mouse events
---
+myMouseBindings :: XConfig l -> M.Map (KeyMask, Button) (Window -> X ())
 myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
-
     -- mod-button1, Set the window to floating mode and move by dragging
-    [ ((modm, button1), (\w -> focus w >> mouseMoveWindow w
-                                       >> windows W.shiftMaster))
-
+    [ ((modm, button1), \w -> focus w >> mouseMoveWindow w
+                                      >> windows W.shiftMaster)
     -- mod-button2, Raise the window to the top of the stack
-    , ((modm, button2), (\w -> focus w >> windows W.shiftMaster))
-
+    , ((modm, button2), \w -> focus w >> windows W.shiftMaster)
     -- mod-button3, Set the window to floating mode and resize by dragging
-    , ((modm, button3), (\w -> focus w >> mouseResizeWindow w
-                                       >> windows W.shiftMaster))
+    , ((modm, button3), \w -> focus w >> mouseResizeWindow w 
+                                      >> windows W.shiftMaster)
     -- you may also bind events to the mouse scroll wheel (button4 and button5)
     ]
 
-------------------------------------------------------------------------
 -- Window rules:
-
 -- Execute arbitrary actions and WindowSet manipulations when managing
 -- a new window. You can use this to, for example, always float a
 -- particular program, or have a client always appear on a particular
@@ -348,7 +321,7 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 --
 -- To match on the WM_NAME, you can use 'title' in the same way that
 -- 'className' and 'resource' are used below.
---
+myManageHook :: Query (Endo WindowSet)
 myManageHook = composeAll
     [ className =? "firefox"           --> doShift "1"
     , className =? "Opera"             --> doShift "1"
@@ -391,39 +364,32 @@ myManageHook = composeAll
     , className =? "Xfce4-appfinder"   --> doFloat
     ]
 
-------------------------------------------------------------------------
 -- Event handling
-
 -- * EwmhDesktops users should change this to ewmhDesktopsEventHook
 --
 -- Defines a custom handler function for X Events. The function should
 -- return (All True) if the default handler is to be run afterwards. To
 -- combine event hooks use mappend or mconcat from Data.Monoid.
---
+myEventHook :: Event -> X All
 myEventHook = serverModeEventHook
 
-------------------------------------------------------------------------
 -- Status bars and logging
-
 -- Perform an arbitrary action on each internal state change or X event.
 -- See the 'XMonad.Hooks.DynamicLog' extension for examples.
---
 -- myLogHook = return()
 
-------------------------------------------------------------------------
 -- Startup hook
-
 -- Perform an arbitrary action each time xmonad starts or is restarted
--- with mod-q.  Used by, e.g., XMonad.Layout.PerWorkspace to initialize
+-- with mod-shift-z. Used by, e.g., XMonad.Layout.PerWorkspace to initialize
 -- per-workspace layout choices.
---
--- By default, do nothing.
+myStartupHook :: X ()
 myStartupHook = do
               setDefaultCursor xC_left_ptr
               setWMName "LG3D"
-              spawn $ helper ++ " respawn conky"
+              spawn $ helper ++ " restart conky"
               spawn $ helper ++ " respawn picom"
 
+myXmobarPP :: Handle -> PP
 myXmobarPP h = xmobarPP
            { ppOutput = hPutStrLn h
            , ppCurrent = xmobarColor myActiveColor myBgColor . wrap "[" "]"
@@ -432,19 +398,13 @@ myXmobarPP h = xmobarPP
            , ppLayout = shorten 9
            }
 
--- Now run xmonad with all the defaults we set up.
--- Run xmonad with the settings you specify. No need to modify this.
---
+-- Run xmonad with the settings you specify.
+main :: IO ()
 main = do
--- A structure containing your configuration settings, overriding
--- fields in the default config. Any you don't override, will
--- use the defaults defined in xmonad/XMonad/Config.hs
---
     -- delay .5 sec for plasma to start
     threadDelay 500000
     xmobar <- spawnPipe "xmobar ~/.xmonad/xmobar.hs"
     xmonad $ ewmhFullscreen . ewmh $ docks $ kde4Config {
-          -- simple stuff
           terminal           = myTerminal,
           focusFollowsMouse  = myFocusFollowsMouse,
           borderWidth        = myBorderWidth,
@@ -453,11 +413,9 @@ main = do
           normalBorderColor  = myNormalBorderColor,
           focusedBorderColor = myFocusedBorderColor,
 
-          -- key bindings
           keys               = myKeys,
           mouseBindings      = myMouseBindings,
 
-          -- hooks, layouts
           layoutHook         = myLayout,
           -- insertPosition :: Position -> Focus -> ManageHook
           -- Position: Master End Above Below
@@ -465,6 +423,6 @@ main = do
           manageHook         = insertPosition Above Newer <+> myManageHook,
           handleEventHook    = myEventHook,
           startupHook        = myStartupHook,
-          logHook = clickablePP (myXmobarPP xmobar) >>= dynamicLogWithPP 
+          logHook = clickablePP (myXmobarPP xmobar) >>= dynamicLogWithPP
     }
 
