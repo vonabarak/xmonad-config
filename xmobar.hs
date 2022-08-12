@@ -1,30 +1,29 @@
-Config { 
-       font = "xft:terminus:size=8"
-       --font = "xft:DejaVu Sans-7:"
-       --font = "-*-terminus-*-*-*-*-12-*-*-*-*-*-iso10646-1"
-       , bgColor = "black"
+Config {
+       bgColor = "black"
        , fgColor = "green"
        , border = NoBorder
        , borderColor = "red"
-       --, position = Static { xpos = 300  , ypos = 200, width = 1620, height = 16 }
-       , position = Static { xpos = 300  , ypos = 0, width = 1620, height = 16 }
-       --, position = Static { xpos = 0  , ypos = 200, width = 1920, height = 16 }
-       --, position = Static { xpos = 600  , ypos = 0, width = 1166, height = 17 }
-       , lowerOnStart = True
+       , position = Static { xpos = 600  , ypos = 0, width = 1320, height = 32 }
+       -- , position = TopP 500 0
+       , lowerOnStart = False
        , hideOnStart = False
        , persistent = True
        , allDesktops = True
        , overrideRedirect = True
-       , commands = [ Run StdinReader
+       , font = "xft:xos4 Terminus:size=14:hinting=0:antialias=0"
+       -- , font = "-*-terminus-*-*-*-*-14-*-*-*-*-*-*-1"
+       , additionalFonts = [ "xft:FontAwesome:pixelsize=12"
+                           , "xft:Clockopia:pixelsize=28:hinting=0:antialias=1"
+                           ]
+       , commands = [ Run UnsafeStdinReader
                     --, Run Weather "URMT" ["-t","<station>: <tempC>C","-L","18","-H","25","--normal","green","--high","red","--low","lightblue"] 36000
-                    --, Run Network "eth0" ["-L","0","-H","32","--normal","green","--high","red"] 10
-                    --, Run Network "ppp128" ["-L","0","-H","32","--normal","green","--high","red"] 5
                     --, Run Network "wlan0" ["-L","0","-H","32","--normal","green","--high","red"] 5
                     --, Run Cpu ["-L","3","-H","50","--normal","green","--high","red"] 5
                     --, Run Memory ["-t","Mem: <usedratio>%"] 10
                     --, Run Swap [] 10
                     --, Run Com "uname" ["-s","-r"] "" 0
-                    , Run Date "%a %b %_d %Y %H:%M:%S" "date" 10
+                    , Run Date "%H:%M:%S" "clock" 10
+                    , Run Date "%a %b %_d %Y " "date" 600
                     --, Run Mail [("inbox", "~/.maildir")] "mail"
                     --, Run MPD ["-t", "<artist> - <title> (<album>) <track>/<plength> <statei> ", "--", "-P", ">>", "-Z", "||", "-S", "><"] 5
                     --, Run Volume "default" "Master" [ ] 10
@@ -41,10 +40,8 @@ Config {
                     ]
        , sepChar = "%"
        , alignSep = "}{"
-       --, template = " %StdinReader% <fc=#9a9a9a></fc>}<fc=#ee9a00>%date%</fc>{ <fc=#0000ff>%mpd%</fc> <fc=#9a9a9a>|</fc> %default:Master% <fc=#9a9a9a>|</fc> <fc=#ffff00>%kbd%</fc> <fc=#9a9a9a>|</fc> %battery%  "
-       --, template = " %StdinReader% }{ <fc=#9a9a9a>|</fc> %default:Master% <fc=#9a9a9a>|</fc> <fc=#ffff00>%kbd%</fc> <fc=#9a9a9a>|</fc> %battery%  "
-       , template = "<fc=#9a9a9a>|</fc><fc=#ee9a00>%date%</fc><fc=#9a9a9a> |</fc><fc=#ffff00>%kbd%</fc><fc=#9a9a9a>|</fc> %StdinReader%}{ "
-       --, template = " %StdinReader% <fc=#9a9a9a></fc>}<fc=#ee9a00>%date%</fc>} <fc=#9a9a9a>|</fc> %default:Master% <fc=#9a9a9a>|</fc> <fc=#ffff00>%kbd%</fc> <fc=#9a9a9a>|</fc> %battery%  "
-       --, template = "  <fc=#9a9a9a>%StdinReader%</fc>}{"
+       , template = "<fc=#ffff00>%kbd%</fc> <fc=#9a9a9a>| </fc>%UnsafeStdinReader%}{\
+       \<action=`~/.xmonad/helper switch plasmawindowed org.kde.plasma.calendar` button=1>\
+       \<fc=#00ff00><fn=2>%clock%</fn></fc> <fc=#ee9a00>%date%</fc></action>"
        }
 

@@ -1,47 +1,50 @@
 --
-
-import XMonad
+import Control.Concurrent (threadDelay)
 import Data.Monoid
 import Data.Ratio
+import Graphics.X11.ExtraTypes.XF86
 import System.Exit
-
-import XMonad.Layout.NoBorders
-import XMonad.Layout.Tabbed
-import XMonad.Layout.Fullscreen
-import XMonad.Layout.LayoutHints
-import XMonad.Layout.PerWorkspace
--- import XMonad.Layout.LayoutModifier
+import System.IO (hPutStrLn)
+import XMonad
+import XMonad.Actions.Commands
 import XMonad.Actions.CycleWS
+import XMonad.Actions.NoBorders (toggleBorder)
+import XMonad.Config.Kde
+import XMonad.Hooks.DynamicLog
+import XMonad.Hooks.EwmhDesktops
+import XMonad.Hooks.InsertPosition
+import XMonad.Hooks.ManageDocks
+import XMonad.Hooks.ManageHelpers
+import XMonad.Hooks.ServerMode
+import XMonad.Hooks.SetWMName
+import XMonad.Layout.Fullscreen
+import XMonad.Layout.GridVariants
+import XMonad.Layout.LayoutHints
+import XMonad.Layout.Monitor
+import XMonad.Layout.NoBorders
+import XMonad.Layout.PerWorkspace
+import XMonad.Layout.Tabbed
 import XMonad.Prompt
 import XMonad.Prompt.RunOrRaise
 import XMonad.Prompt.XMonad
--- import XMonad.Prompt.Ssh
-import XMonad.Util.Run (spawnPipe)
+import XMonad.Util.ClickableWorkspaces (clickablePP)
 import XMonad.Util.Cursor
-import System.IO (hPutStrLn)
-import XMonad.Hooks.DynamicLog
-import XMonad.Hooks.ManageDocks
-import Graphics.X11.ExtraTypes.XF86
--- import XMonad.Actions.PhysicalSCreens
-import XMonad.Layout.Monitor
-import XMonad.Actions.Commands
-import XMonad.Hooks.ServerMode
-import XMonad.Hooks.SetWMName
-import XMonad.Hooks.ManageHelpers
-import XMonad.Actions.Commands
+import XMonad.Util.Run (spawnPipe)
 
+import qualified Language.Haskell.Interpreter  as I
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
 
+helper          = "~/.xmonad/helper"
+
 -- Terminal programm
-myTerminal      = "urxvtc"
---myTerminal      = "qterminal"
+myTerminal      = "konsole"
 
+-- Font
+myFont = "xft:terminus:size=18:hinting=0:antialias=1"
+mySmallFont = "xft:terminus:size=10:hinting=0:antialias=1"
 
-myFont = "xft:terminus:size=8"
---myFont = "xft:DejaVu Sans-7:"
---myFont = "-*-terminus-*-*-*-*-12-*-*-*-*-*-iso10646-1"
-
+-- Colors
 myDefaultColor  = "green"
 myBgColor       = "black"
 myHlColor       = "yellow"
@@ -75,7 +78,9 @@ myModMask       = mod4Mask
 --
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
-myWorkspaces    = ["1","2","3","4","5", "6", "7", "8", "9", "0", "q","w","e","r", "t", "y", "u", "i", "o", "p"]
+myWorkspaces    = [ "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
+                  , "q", "w", "e", "r", "t", "y", "u", "i", "o", "p"
+                  ]
 
 -------------------------------------------------------------------------
 -- Layouts:
@@ -91,7 +96,8 @@ myWorkspaces    = ["1","2","3","4","5", "6", "7", "8", "9", "0", "q","w","e","r"
 --myLayout = tiled ||| Mirror tiled ||| Full
 
 
-myTab = defaultTheme
+myTabConfig :: Theme
+myTabConfig = def
     { activeColor         = myBgColor
     , inactiveColor       = myBgColor
     , urgentColor         = myInactiveColor
@@ -102,11 +108,11 @@ myTab = defaultTheme
     , inactiveTextColor   = myDefaultColor
     , urgentTextColor     = myInactiveColor
     , decoHeight          = 16
-    , fontName            = myFont
+    , fontName            = mySmallFont
     }
 
 myXPConfig :: XPConfig
-myXPConfig = defaultXPConfig
+myXPConfig = def
     { font                = myFont
     , bgColor             = myBgColor
     , fgColor             = myDefaultColor
@@ -114,14 +120,14 @@ myXPConfig = defaultXPConfig
     , fgHLight            = myFocusedBorderColor
     , borderColor         = myNormalBorderColor
     , promptBorderWidth   = 1
-    , height              = 16
+    , height              = 32
     , position            = Top
-    , historySize         = 100
+    , historySize         = 100000
     , historyFilter       = deleteConsecutive
 --    , autoComplete        = Nothing
     }
 
---myLayout = tiled ||| layoutHints (tabbed shrinkText myTab) ||| (noBorders Full)
+--myLayout = tiled ||| layoutHints (tabbed shrinkText myTabConfig) ||| (noBorders Full)
 --    where
 --        tiled   = layoutHints $ ResizableTall nmaster delta ratio []
 --        tiled   = Tall nmaster delta ratio
@@ -132,7 +138,11 @@ myXPConfig = defaultXPConfig
 myLayout = onWorkspace "1" (avoidStruts (noBorders Full)) $
            onWorkspace "0" (noBorders (fullscreenFull Full)) $
            onWorkspace "q" (avoidStruts (noBorders tiled)) $
-           avoidStruts (smartBorders tiled |||  noBorders Full ||| noBorders (layoutHints (tabbed shrinkText myTab))) ||| noBorders (fullscreenFull Full)
+           onWorkspace "e" (avoidStruts (noBorders (layoutHints (tabbed shrinkText myTabConfig)))) $
+           avoidStruts $ smartBorders tiled |||
+           noBorders Full |||
+           noBorders (layoutHints (tabbed shrinkText myTabConfig)) |||
+           Grid (16/9)
   where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
@@ -147,22 +157,39 @@ myLayout = onWorkspace "1" (avoidStruts (noBorders Full)) $
      delta   = 3/100
 
 
+data EvalPrompt = EvalPrompt
+
+instance XPrompt EvalPrompt where
+  showXPrompt = const "haskell> "
+  commandToComplete _ = id
+  completionFunction _ s = io $ do
+    res <- I.runInterpreter $ do
+            I.setImports ["Prelude", "Data.Ratio", "XMonad", "XMonad.Core"]
+            I.eval s
+    case res of
+      Left err -> return [show err]
+      Right s -> return [s]
+
+evalPrompt = do
+  uninstallSignalHandlers
+  mkXPromptWithModes [XPT EvalPrompt] myXPConfig
+  installSignalHandlers
+
+
 ------------------------------------------------------------------------
 -- Key bindings. Add, modify or remove key bindings here.
---
+-- the list of kesyms may be found at /usr/include/X11/keysymdef.h
 myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- launch a terminal
     [ ((modm,               xK_Return), spawn $ XMonad.terminal conf)
 
-    -- launch dmenu
-    --, ((modm,               xK_p     ), spawn "dmenu_run -fn 'DejaVu Sans-8'")
-    --, ((modm,               xK_p     ), spawn "krunner")
     , ((modm,               xK_Right ), nextWS)
     , ((modm,               xK_Left  ), prevWS)
 
     , ((modm,               xK_x     ), runOrRaisePrompt myXPConfig)
     , ((modm .|. controlMask, xK_x   ), xmonadPrompt myXPConfig)
+    , ((modm .|. shiftMask, xK_x     ), evalPrompt)
 
     -- close focused window
     , ((modm,               xK_c     ), kill)
@@ -178,6 +205,11 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- Move focus to the next window
     , ((modm,               xK_Tab   ), windows W.focusDown)
+    , ((modm,               xK_Down  ), windows W.focusDown)
+
+    -- Move focus to the previous window
+    , ((modm,               xK_grave ), windows W.focusUp  )
+    , ((modm,               xK_Up    ), windows W.focusUp  )
 
     -- Move focus to the next window
     , ((modm,               xK_j     ), windows W.focusDown)
@@ -203,8 +235,11 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Expand the master area
     , ((modm,               xK_l     ), sendMessage Expand)
 
-    -- Push window back into tiling
+    -- Push floating window back into tiling
     , ((modm,               xK_g     ), withFocused $ windows . W.sink)
+
+    -- Toggle window border
+    , ((modm,               xK_v     ), withFocused $ toggleBorder)
 
     -- Increment the number of windows in the master area
     , ((modm              , xK_comma ), sendMessage (IncMasterN 1))
@@ -218,57 +253,60 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     --
     , ((modm              , xK_b     ), sendMessage ToggleStruts)
 
+
     -- Quit xmonad
-    -- Just send dbus signal to kde for logout instead of quiting xmonad
-    --, ((modm .|. shiftMask, xK_z     ),  spawn "dbus-send --print-reply --dest=org.kde.ksmserver /KSMServer org.kde.KSMServerInterface.logout int32:1 int32:0 int32:1")
-    --, ((modm .|. shiftMask, xK_z     ),  spawn "qdbus org.kde.ksmserver /KSMServer logout 0 0 0")
-
-    -- LXDE
-    --, ((modm .|. shiftMask, xK_z     ), spawn "lxsession-logout")
-
-    -- Xmonad
-    , ((modm .|. shiftMask, xK_z     ), io (exitWith ExitSuccess))
+    --, ((modm .|. shiftMask, xK_z     ), io (exitWith ExitSuccess))
 
     -- Restart xmonad
     , ((modm              , xK_z     ), spawn "xmonad --recompile; xmonad --restart")
+    
+    -- Various useful bindings
+    , ((modm              , xK_F1), spawn $ helper ++ " switch pavucontrol-qt")
+    , ((modm              , xK_F8), spawn "wall Hello!")
+    , ((modm              , xK_F9 ), spawn "meta-f9.sh")
+    , ((modm              , xK_F12 ), spawn $ helper ++ " switch picom")
+    --, ((modm              , xK_F11 ), spawn "xscreensaver-command -lock")
+    --, ((modm .|. shiftMask, xK_F10), spawn "scrot '%Y-%m-%d-%H-%M-%S_$wx$h.png'")
+    --, ((modm              , xK_Escape ), spawn "xset dpms force off; xset dpms force off")
+    --, ((0                 , xF86XK_Mail) , spawn "urxvt -e mutt")
+    --, ((0                 , xF86XK_AudioNext), spawn "ncmpcpp next")       --next song
+    --, ((modm              , xK_KP_Right), spawn "ncmpcpp next")       --next song
+    --, ((0                 , xF86XK_AudioPrev), spawn "ncmpcpp prev")       --prev song
+    --, ((modm              , xK_KP_Left), spawn "ncmpcpp prev")       --prev song
+    --, ((0                 , xF86XK_AudioPlay), spawn "ncmpcpp toggle")     --toggle play/pause
+    --, ((modm              , xK_KP_Home), spawn "ncmpcpp toggle")     --toggle play/pause
+    --, ((0                 , xF86XK_AudioStop), spawn "ncmpcpp stop")       --stop song
+    --, ((modm              , xK_KP_End), spawn "ncmpcpp stop")       --stop song
+    --, ((0                 , xF86XK_AudioRaiseVolume), spawn "amixer set Master 4%+")
+    --, ((0                 , xF86XK_AudioLowerVolume), spawn "amixer set Master 4%-")
+    --, ((0                 , xF86XK_AudioMute), spawn "amixer set Master toggle")
+    --, ((0                 , xF86XK_HomePage), spawn "firefox -new-tab https://google.com/")
+    --, ((0                 , xF86XK_MonBrightnessUp), spawn "xbacklight -inc 10")
+    --, ((0                 , xF86XK_MonBrightnessDown), spawn "xbacklight -dec 10")
+    --, ((0                 , xF86XK_Sleep), spawn "xscreensaver-command -lock")
+    -- KDE
+    --, ((modm .|. shiftMask, xK_z     ), spawn "qdbus org.kde.ksmserver /KSMServer logout 0 0 0")
+    --, ((modm              , xK_f     ), spawn "qdbus org.kde.screensaver /ScreenSaver SetActive true")
+    --, ((modm              , xK_backslash), spawn "dolphin")
+    --, ((modm,               xK_v     ), spawn "krunner")
+    --, ((modm              , xK_F2), spawn "plasmawindowed org.kde.plasma.kickoff")
+    -- LXDE
+    --, ((modm .|. shiftMask, xK_z     ), spawn "lxqt-leave")
+    --, ((modm,               xK_v     ), spawn "lxqt-runner")
+    --, ((modm              , xK_F10), spawn "/usr/bin/lximage-qt --screenshot")
     ]
-    ++
 
+    ++
     --
     -- mod-[1..9], Switch to workspace N
     -- mod-shift-[1..9], Move client to workspace N
     --
     [((m .|. modm, k), windows $ f i)
-        | (i, k) <- zip (XMonad.workspaces conf) [xK_1, xK_2, xK_3, xK_4, xK_5, xK_6, xK_7, xK_8, xK_9, xK_0, xK_q, xK_w, xK_e, xK_r, xK_t, xK_y, xK_u, xK_i, xK_o, xK_p]
+        | (i, k) <- zip (XMonad.workspaces conf) [
+        xK_1, xK_2, xK_3, xK_4, xK_5, xK_6, xK_7, xK_8, xK_9, xK_0,
+        xK_q, xK_w, xK_e, xK_r, xK_t, xK_y, xK_u, xK_i, xK_o, xK_p
+        ]
         , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
-    ++
-    -- Various useful bindings
-    [ ((modm              , xK_Escape), spawn "wall Hello!")
-    , ((modm              , xK_backslash),  spawn "dolphin")
-    , ((modm              , xK_F12 ), spawn "~/.xmonad/autostart switch compton")
-    , ((modm              , xK_F11 ), spawn "xscreensaver-command -lock")
-    , ((modm              , xK_F9 ), spawn "service-vm.sh")
-    , ((modm              , xK_F10), spawn "scrot '%Y-%m-%d-%H-%M-%S_$wx$h.png'")
-    , ((modm              , xK_F2), spawn "plasmawindowed org.kde.plasma.kickoff")
-    --, ((modm              , xK_Escape ), spawn "xset dpms force off; xset dpms force off")
-    --, ((0                 , xF86XK_Mail) , spawn "urxvt -e mutt")
-    , ((0                 , xF86XK_AudioNext), spawn "ncmpcpp next")       --next song
-    --, ((modm              , xK_KP_Right), spawn "ncmpcpp next")       --next song
-    , ((0                 , xF86XK_AudioPrev), spawn "ncmpcpp prev")       --prev song
-    --, ((modm              , xK_KP_Left), spawn "ncmpcpp prev")       --prev song
-    , ((0                 , xF86XK_AudioPlay), spawn "ncmpcpp toggle")     --toggle play/pause
-    --, ((modm              , xK_KP_Home), spawn "ncmpcpp toggle")     --toggle play/pause
-    , ((0                 , xF86XK_AudioStop), spawn "ncmpcpp stop")       --stop song
-    --, ((modm              , xK_KP_End), spawn "ncmpcpp stop")       --stop song
-    , ((0                 , xF86XK_AudioRaiseVolume), spawn "amixer set Master 4%+")
-    , ((0                 , xF86XK_AudioLowerVolume), spawn "amixer set Master 4%-")
-    , ((0                 , xF86XK_AudioMute), spawn "amixer set Master toggle")
-    --, ((0                 , xF86XK_HomePage), spawn "firefox -new-tab https://google.com/")
-    --, ((0                 , xF86XK_MonBrightnessUp), spawn "xbacklight -inc 10")
-    --, ((0                 , xF86XK_MonBrightnessDown), spawn "xbacklight -dec 10")
-    , ((0                 , xF86XK_Sleep), spawn "xscreensaver-command -lock")
-    ]
-
     ++
     --
     --mod-{w,e,r}, Switch to physical/Xinerama screens 1, 2, or 3
@@ -297,9 +335,6 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
     ]
 
 ------------------------------------------------------------------------
-
-
-------------------------------------------------------------------------
 -- Window rules:
 
 -- Execute arbitrary actions and WindowSet manipulations when managing
@@ -314,54 +349,46 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 -- To match on the WM_NAME, you can use 'title' in the same way that
 -- 'className' and 'resource' are used below.
 --
-myManageHook = manageDocks <+> composeAll
-    [ className =? "Firefox"        --> doShift "1"
-    , className =? "Opera"          --> doShift "1"
-    , className =? "psi"            --> doShift "q"
-    , className =? "Psi-plus"       --> doShift "q"
-    , className =? "Psi+"           --> doShift "q"
-    , className =? "Telegram"       --> doShift "q"
-    , className =? "Pidgin"         --> doShift "q"
-    , className =? "Thunderbird"    --> doShift "w"
-    , className =? "MPlayer"        --> doFloat
-    , className =? "Conky"          --> doIgnore
+myManageHook = composeAll
+    [ className =? "firefox"           --> doShift "1"
+    , className =? "Opera"             --> doShift "1"
+    , className =? "Google-chrome"     --> doShift "1"
+    , className =? "Steam"             --> doShift "9"
+    , className =? "dota_linux"        --> doShift "0"
+    , className =? "xfreerdp"          --> doShift "0"
+    , className =? "psi"               --> doShift "q"
+    , className =? "Psi-plus"          --> doShift "q"
+    , className =? "Psi+"              --> doShift "q"
+    , className =? "Telegram"          --> doShift "q"
+    , className =? "Pidgin"            --> doShift "q"
+    , className =? "Thunderbird"       --> doShift "w"
+    , className =? "MPlayer"           --> doFloat
+    , className =? "Conky"             --> doIgnore
+    , className =? "Qmmp"              --> hasBorder False -- qmmp changes it's class name 
+    , className =? "qmmp"              --> hasBorder False -- from "qmmp" to "Qmmp" after start
+    , (className =? "qmmp" <&&> title =? "Media Library") --> (doSink <+> hasBorder True)
     --, (role =? "gimp-toolbox" <||> role =? "gimp-dock") --> doFloat
-    --, className =? "Gimp"           --> doFloat
-    , className =? "dota_linux"     --> doShift "0"
-    , className =? "Steam"          --> doShift "9"
-    , className =? "xfreerdp"       --> doShift "0"
 
---
 -- IDE's
     , className =? "jetbrains-pycharm" --> doShift "e"
-    , className =? "Momentics" --> (doFloat <+> doShift "e")
-    , className =? "Java" --> (doFloat <+> doShift "e")
-    , title     =? "Momentics IDE " --> (doFloat <+> doShift "e")
---
+    , className =? "Momentics"         --> (doFloat <+> doShift "e")
+    , className =? "Java"              --> (doFloat <+> doShift "e")
+    , title     =? "Momentics IDE "    --> (doFloat <+> doShift "e")
+
 -- KDE
-    --, className =? "plasmashell"    --> doIgnore
-    --, title     =? "Plasma"         --> doIgnore
-    , className =? "plasmawindowed" -->  doFloatAt 0 0
-    --, className =? "plasmawindowed" --> doFloat <+> doRectFloat(W.RationalRect 0.0 0.0 0.1 0.1)
-    --, className =? "plasmawindowed"  --> doFloat
-    , className =? "dashboard"      --> doIgnore
-    , className =? "Kmix"           --> doFloat
---
+    , isKDETrayWindow                  --> doIgnore
+    , className =? "plasmashell"       --> doIgnore
+    , className =? "plasmawindowed"    --> doFloat
+    , className =? "krunner"           --> (doFloat <+> hasBorder False)
+
 -- LXDE
-    , className =? "Lxsession-logout" --> doIgnore
-    , className =? "Lxpanel"        --> doFloat
---
+    , className =? "Lxsession-logout"  --> doIgnore
+    , className =? "Lxpanel"           --> doFloat
+
 -- XFCE
-    --, className =? "Xfce4-notifyd"  --> doIgnore
-    --, className =? "Orage"          --> doFloat
-    --, className =? "Xfce4-appfinder" --> doFloat
---
---
---
-    , resource =? "qmmp"            --> doFloat
-    , resource =? "Photoshop.exe"    --> doIgnore
-    --, resource  =? "dota.exe"       --> doShift "9"
-    --, resource  =? "war3.exe"       --> doShift "9"
+    , className =? "Xfce4-notifyd"     --> doIgnore
+    , className =? "Orage"             --> doFloat
+    , className =? "Xfce4-appfinder"   --> doFloat
     ]
 
 ------------------------------------------------------------------------
@@ -394,64 +421,50 @@ myEventHook = serverModeEventHook
 myStartupHook = do
               setDefaultCursor xC_left_ptr
               setWMName "LG3D"
-              spawn "~/.xmonad/autostart"
+              spawn $ helper ++ " respawn conky"
+              spawn $ helper ++ " respawn picom"
 
 myXmobarPP h = xmobarPP
            { ppOutput = hPutStrLn h
-           , ppCurrent = xmobarColor myActiveColor myBgColor
+           , ppCurrent = xmobarColor myActiveColor myBgColor . wrap "[" "]"
            , ppTitle = xmobarColor myHlColor myBgColor . shorten 160
            , ppSep = xmobarColor myInactiveColor myBgColor " | "
-           , ppLayout = shorten 16
+           , ppLayout = shorten 9
            }
-------------------------------------------------------------------------
-
---myTray = monitor 
---           { prop = ClassName "Analog Clock"
---           , rect = Rectangle (1366 - 300) (768 - 300) 300 300
---           , visible = True
---           , persistent = True
---           }
-           
 
 -- Now run xmonad with all the defaults we set up.
-
 -- Run xmonad with the settings you specify. No need to modify this.
 --
 main = do
-
 -- A structure containing your configuration settings, overriding
 -- fields in the default config. Any you don't override, will
 -- use the defaults defined in xmonad/XMonad/Config.hs
 --
--- No need to modify this.
---
-        xmobar <- spawnPipe "xmobar ~/.xmonad/xmobar.hs"
-        xmonad $ defaultConfig {
-              -- simple stuff
-              terminal           = myTerminal,
-              focusFollowsMouse  = myFocusFollowsMouse,
-              borderWidth        = myBorderWidth,
-              modMask            = myModMask,
-              workspaces         = myWorkspaces,
-              normalBorderColor  = myNormalBorderColor,
-              focusedBorderColor = myFocusedBorderColor,
+    -- delay .5 sec for plasma to start
+    threadDelay 500000
+    xmobar <- spawnPipe "xmobar ~/.xmonad/xmobar.hs"
+    xmonad $ ewmhFullscreen . ewmh $ docks $ kde4Config {
+          -- simple stuff
+          terminal           = myTerminal,
+          focusFollowsMouse  = myFocusFollowsMouse,
+          borderWidth        = myBorderWidth,
+          modMask            = myModMask,
+          workspaces         = myWorkspaces,
+          normalBorderColor  = myNormalBorderColor,
+          focusedBorderColor = myFocusedBorderColor,
 
-              -- key bindings
-              keys               = myKeys,
-              mouseBindings      = myMouseBindings,
+          -- key bindings
+          keys               = myKeys,
+          mouseBindings      = myMouseBindings,
 
-              -- hooks, layouts
-              layoutHook         = myLayout,
-              manageHook         = myManageHook,
-              -- <+> manageMonitor myTray,
-              handleEventHook    = myEventHook,
-              --logHook            = myLogHook,
-              startupHook        = myStartupHook,
---              logHook = dynamicLogWithPP $ xmobarPP
---                        { ppOutput = hPutStrLn xmobar,
---                          ppTitle = xmobarColor "green" "" . shorten 50
---                        },
-              logHook = dynamicLogWithPP $ myXmobarPP xmobar
-
-       }
+          -- hooks, layouts
+          layoutHook         = myLayout,
+          -- insertPosition :: Position -> Focus -> ManageHook
+          -- Position: Master End Above Below
+          -- Focus: Newer Older
+          manageHook         = insertPosition Above Newer <+> myManageHook,
+          handleEventHook    = myEventHook,
+          startupHook        = myStartupHook,
+          logHook = clickablePP (myXmobarPP xmobar) >>= dynamicLogWithPP 
+    }
 
