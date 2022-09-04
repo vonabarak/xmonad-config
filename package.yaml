@@ -46,6 +46,8 @@ library:
   - filepath
   - extra
   - directory
+  - cryptonite
+  - utf8-string
 
 executables:
   xmonad:
@@ -66,3 +68,12 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - X11
+  runner:
+    main:                runner.hs
+    source-dirs:         .
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - xmonad-config

@@ -13,10 +13,10 @@ import XMonad.Hooks.ManageDocks ( ToggleStruts(ToggleStruts) )
 import XMonad.Util.EZConfig
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
-
-import Runner (switch, respawn, restart)
-import EvalPrompt ( evalPrompt )
 import Data.List (intercalate)
+
+import EvalPrompt ( evalPrompt )
+import Runner (switch, respawn, restart)
 
 myKeyMap :: XPConfig -> XConfig Layout -> [(String, X (), String)]
 myKeyMap myXPConfig conf =
@@ -46,8 +46,8 @@ myKeyMap myXPConfig conf =
     , ("M-,"         , sendMessage (IncMasterN (-1)) , "Deincrement the number of windows in the master area")
     , ("M-b"         , sendMessage ToggleStruts      , "Toggle the status bar gap")
     , ("M-z r"       , restartXmonad                 , "Restart xmonad ")
-    , ("M-<F1>"      , switch "pavucontrol-qt"       , "Pavucontrol")
-    , ("M-<F2>"      , switch "oneko"                , "Oneko")
+    , ("M-<F2>"      , switch "pavucontrol-qt"       , "Pavucontrol")
+    , ("M-<F3>"      , switch "oneko"                , "Oneko")
     , ("M-<F8>"      , spawn "wall Hello!"           , "wall Hello!")
     , ("M-<F9>"      , spawn "meta-f9.sh"            , "meta-f9.sh")
     , ("M-<F12>"     , switch "picom"                , "Switch compositor")
@@ -73,12 +73,13 @@ helpMessage myXPConfig conf =
     where
         tabulate a b = a ++ concat (replicate x "\t") ++ b where 
             x = 3 - (length a `div` 8)
-        additional = "\nM-z c\t\t\tCheck keybindings\nM-z h\t\t\tThis help message"
+        additional = "\n\nM-z c\t\t\tCheck keybindings\nM-<F1>\t\t\tThis help message"
 
 myKeys :: XPConfig -> XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
 myKeys myXPConfig conf = mkKeymap conf $ myKeyMap' myXPConfig conf ++
     [ ("M-z c", checkKeymap conf (myKeyMap' myXPConfig conf))
-    , ("M-z h", xmessage $ helpMessage myXPConfig conf)
+    -- , ("M-<F1>", switch $ "xmessage \"" ++ (helpMessage myXPConfig conf) ++ "\"")
+    , ("M-<F1>", xmessage $ helpMessage myXPConfig conf)
     ] ++
 
     -- mod-N, Switch to workspace N
