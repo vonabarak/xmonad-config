@@ -25,7 +25,7 @@ evalComplFunction s = io $ do
 showResult :: MonadIO m => String -> m ()
 showResult s = io $ do
     result <- evalComplFunction s
-    spawn $ "notify-send " ++ intercalate "\n" result
+    spawn $ "notify-send \"" ++ intercalate "\n" result ++ "\""
 
 evalPrompt :: XPConfig -> X ()
 evalPrompt myXPConfig = do

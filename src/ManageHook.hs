@@ -33,10 +33,12 @@ myManageHook = composeAll
     , className =? "Pidgin"            --> doShift "q"
     , className =? "Thunderbird"       --> doShift "w"
     , className =? "MPlayer"           --> doFloat
+    , className =? "zoom"              --> doFloat
     , className =? "Conky"             --> doIgnore
     , className =? "Qmmp"              --> hasBorder False -- qmmp changes it's class name 
     , className =? "qmmp"              --> hasBorder False -- from "qmmp" to "Qmmp" after start
     , (className =? "qmmp" <&&> title =? "Media Library") --> (doSink <+> hasBorder True)
+    , (className =? "qmmp" <&&> title =? "Qmmp Settings") --> (doSink <+> hasBorder True)
     --, (role =? "gimp-toolbox" <||> role =? "gimp-dock") --> doFloat
 
 -- IDE's

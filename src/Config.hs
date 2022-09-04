@@ -27,7 +27,7 @@ import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
 
 import ManageHook ( myManageHook )
-import Keys ( myHotKeys )
+import Keys ( myKeys )
 import Runner ( respawn )
 
 
@@ -72,9 +72,8 @@ myModMask       = mod4Mask
 -- By default we use numeric strings, but any string may be used as a
 -- workspace name. The number of workspaces is determined by the length
 -- of this list.
---
--- A tagging example:
--- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
+-- For automatic hotkeys generator to work workspace name must be a one
+-- printable character
 myWorkspaces :: [String]
 myWorkspaces    = [ "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
                   , "q", "w", "e", "r", "t", "y", "u", "i", "o", "p"
@@ -113,10 +112,6 @@ myXPConfig = def
     , historyFilter       = deleteConsecutive
 --    , autoComplete        = Nothing
     }
-
-
-
-
 myLayout = onWorkspace "1" workspace1 $
            onWorkspace "0" workspace0 $
            onWorkspace "w" workspaceW $
@@ -149,33 +144,9 @@ myLayout = onWorkspace "1" workspace1 $
     workspaceR = tabbed' ||| tiled' ||| grid   ||| full
     allOthers  = tiled'  ||| grid   ||| tabbed'||| full
 
-
--- Key bindings. Add, modify or remove key bindings here.xmessage
--- the list of kesyms may be found at /usr/include/X11/keysymdef.h
-myKeys :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
-myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
-
-    myHotKeys conf myXPConfig
-
-    ++
-    -- mod-[1..9], Switch to workspace N
-    -- mod-shift-[1..9], Move client to workspace N
-    [((m .|. modm, k), windows $ f i)
-        | (i, k) <- zip (XMonad.workspaces conf) [
-        xK_1, xK_2, xK_3, xK_4, xK_5, xK_6, xK_7, xK_8, xK_9, xK_0,
-        xK_q, xK_w, xK_e, xK_r, xK_t, xK_y, xK_u, xK_i, xK_o, xK_p
-        ]
-        , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
-    ++
-    --mod-{a,s,d}, Switch to physical/Xinerama screens 1, 2, or 3
-    --mod-shift-{a,s,d}, Move client to screen 1, 2, or 3
-    [((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
-        | (key, sc) <- zip [xK_a, xK_s, xK_d] [0..]
-        , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
-
 -- Mouse bindings: default actions bound to mouse events
 myMouseBindings :: XConfig l -> M.Map (KeyMask, Button) (Window -> X ())
-myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
+myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList
     -- mod-button1, Set the window to floating mode and move by dragging
     [ ((modm, button1), \w -> focus w >> mouseMoveWindow w
                                       >> windows W.shiftMaster)
@@ -238,7 +209,7 @@ main :: IO ()
 main = do
     -- delay 2 sec for plasma to start
     threadDelay 2000000
-    xmobar <- spawnPipe "xmobar ~/.xmonad/xmobar.hs"
+    hXmobar <- spawnPipe "xmobar ~/.xmonad/xmobar.hs"
     xmonad $ ewmh $ docks $ kde4Config {
           terminal           = myTerminal,
           focusFollowsMouse  = myFocusFollowsMouse,
@@ -248,7 +219,7 @@ main = do
           normalBorderColor  = myNormalBorderColor,
           focusedBorderColor = myFocusedBorderColor,
 
-          keys               = myKeys,
+          keys               = myKeys myXPConfig,
           mouseBindings      = myMouseBindings,
 
           layoutHook         = myLayout,
@@ -258,6 +229,5 @@ main = do
           manageHook         = insertPosition Above Newer <+> myManageHook,
           handleEventHook    = myEventHook,
           startupHook        = myStartupHook,
-          logHook = clickablePP (myXmobarPP xmobar) >>= dynamicLogWithPP
+          logHook = clickablePP (myXmobarPP hXmobar) >>= dynamicLogWithPP
     }
-
