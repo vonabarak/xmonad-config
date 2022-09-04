@@ -1,15 +1,15 @@
 module Runner (switch, restart, respawn) where
 
+import Crypto.Hash ( hash, MD5, Digest )
 import System.Directory ( removeFile )
 import System.Process ( getPid, spawnCommand, ProcessHandle )
-import System.FilePath ( (<.>), (</>) )
+import System.FilePath
 import System.Posix
     ( ProcessID, sigKILL, signalProcess, getRealUserID )
 import Control.Exception ( try, SomeException )
 import Control.Exception.Extra ( ignore )
-import XMonad ( liftIO )
 import Control.Monad.IO.Class ( MonadIO(..) )
-
+import Data.ByteString.UTF8 as ByteString ( fromString )
 
 switch :: MonadIO m => String -> m ()
 switch command = liftIO $ switch' command
@@ -85,7 +85,14 @@ writePid command handler = do
     writeFile path (show pid)
 
 
+-- Returns a name for PID-file containing executable name and md5 hash
+-- of full command eg `conky-128b51d79c80815a6f5a394c938ad230.pid`
+-- so different arguments to command will produce a different PID-file
 getPidFilePath :: String -> IO String
 getPidFilePath command = do
     uid <- getRealUserID
-    return ("/run/user/" </> show uid </> command <.> "pid")
+    return ("/run/user/" </> show uid </> fileName <.> "pid") where
+        fileName = exeName ++ "-" ++ show commandHash
+        exeName = takeFileName $ head $ words command
+        commandHash :: Digest MD5
+        commandHash = hash $ ByteString.fromString command
