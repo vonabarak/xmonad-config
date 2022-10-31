@@ -73,12 +73,16 @@ helpMessage myXPConfig conf =
     where
         tabulate a b = a ++ concat (replicate x "\t") ++ b where 
             x = 3 - (length a `div` 8)
-        additional = "\n\nM-z c\t\t\tCheck keybindings\nM-<F1>\t\t\tThis help message"
+        additional = "\n\nM-z c\t\t\tCheck keybindings\n\
+        \M-<F1>\t\t\tThis help message\n\n\
+        \M-<workspace>\t\tSwitch to <workspace>\n\
+        \M-S-<workspace>\t\tMove window to <workspace>\n\
+        \M-{a,s,d}\t\tSwitch to screen 1, 2 or 3 respectively\n\
+        \M-S-{a,s,d}\t\tMove window to screen 1, 2 or 3 respectively\n"
 
 myKeys :: XPConfig -> XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
 myKeys myXPConfig conf = mkKeymap conf $ myKeyMap' myXPConfig conf ++
     [ ("M-z c", checkKeymap conf (myKeyMap' myXPConfig conf))
-    -- , ("M-<F1>", switch $ "xmessage \"" ++ (helpMessage myXPConfig conf) ++ "\"")
     , ("M-<F1>", xmessage $ helpMessage myXPConfig conf)
     ] ++
 

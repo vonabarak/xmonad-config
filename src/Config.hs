@@ -201,7 +201,7 @@ myXmobarPP h = xmobarPP
            --, ppHiddenNoWindows = xmobarColor myInactiveColor myBgColor
            , ppTitle = xmobarColor myHlColor myBgColor . shorten 160
            , ppSep = xmobarColor myInactiveColor myBgColor " | "
-           , ppLayout = (\s -> "<action=`xmonadctl next-layout`>" ++ s ++ "</action>") . shorten 30
+           , ppLayout = (\s -> "<action=`xmonadctl next-layout`>" ++ s ++ "</action>") . shorten 9
            }
 
 -- Run xmonad with the settings you specify.
