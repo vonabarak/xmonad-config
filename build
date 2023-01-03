@@ -2,5 +2,9 @@
 
 BASEDIR=$(dirname "$0")
 
-stack --stack-yaml ${BASEDIR}/stack.yaml build
-stack --stack-yaml ${BASEDIR}/stack.yaml install --local-bin-path ${BASEDIR}
+stack --stack-yaml "${BASEDIR}/stack.yaml" build
+stack --stack-yaml "${BASEDIR}/stack.yaml" install --local-bin-path "${HOME}/.local/bin"
+
+echo Creating symlink for "${BASEDIR}/xmonad-x86_64-linux"
+rm "${BASEDIR}/xmonad-x86_64-linux"
+ln -s "${HOME}/.local/bin/xmonad-x86_64-linux" "${BASEDIR}/xmonad-x86_64-linux"
