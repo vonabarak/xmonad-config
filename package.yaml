@@ -38,6 +38,7 @@ library:
   dependencies:
   - xmonad
   - xmonad-contrib
+  - xmonad-extras
   - containers
   - hint
   - process
@@ -50,7 +51,7 @@ library:
   - utf8-string
 
 executables:
-  xmonad-x86_64-linux:
+  xmonad:
     main:                xmonad.hs
     source-dirs:         .
     ghc-options:
@@ -68,6 +69,15 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - X11
+  xmobar:
+    main:                xmobar.hs
+    source-dirs:         .
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - xmobar
   runner:
     main:                runner.hs
     source-dirs:         .

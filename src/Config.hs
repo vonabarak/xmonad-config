@@ -165,7 +165,7 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList
 myEventHook :: Event -> X All
 myEventHook event = do
      -- commands by name
-    serverModeEventHookCmd event
+    _ <- serverModeEventHookCmd event
 
     -- commands by index
     -- serverModeEventHook event
@@ -173,7 +173,7 @@ myEventHook event = do
     -- extra commands may be defined here
     -- here's an example of command that just prints a string to 
     -- xmonad's stderr with xmonadctl -a XMONAD_PRINT hello
-    serverModeEventHookF "XMONAD_PRINT" (io . putStrLn) $ event
+    _ <- serverModeEventHookF "XMONAD_PRINT" (io . putStrLn) $ event
     -- or shows a notification
     serverModeEventHookF "XMONAD_NOTIFY" (\s -> spawn ("notify-send " ++ s)) $ event
 
