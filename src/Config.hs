@@ -10,6 +10,7 @@ import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.InsertPosition
 import XMonad.Hooks.ManageDocks
+import XMonad.Hooks.PerWindowKbdLayout
 import XMonad.Hooks.ServerMode
 import XMonad.Hooks.SetWMName ( setWMName )
 import XMonad.Layout.Fullscreen
@@ -175,7 +176,8 @@ myEventHook event = do
     -- xmonad's stderr with xmonadctl -a XMONAD_PRINT hello
     _ <- serverModeEventHookF "XMONAD_PRINT" (io . putStrLn) $ event
     -- or shows a notification
-    serverModeEventHookF "XMONAD_NOTIFY" (\s -> spawn ("notify-send " ++ s)) $ event
+    _ <- serverModeEventHookF "XMONAD_NOTIFY" (\s -> spawn ("notify-send " ++ s)) $ event
+    perWindowKbdLayout event
 
 -- Status bars and logging
 -- Perform an arbitrary action on each internal state change or X event.
