@@ -21,6 +21,7 @@ import Data.Monoid ( Endo )
 myManageHook :: Query (Endo WindowSet)
 myManageHook = composeAll
     [ className =? "firefox"           --> doShift "1"
+    , className =? "firefox-esr"       --> doShift "1"
     , className =? "Opera"             --> doShift "1"
     , className =? "Google-chrome"     --> doShift "1"
     , className =? "Steam"             --> doShift "9"
@@ -29,9 +30,14 @@ myManageHook = composeAll
     , className =? "psi"               --> doShift "q"
     , className =? "Psi-plus"          --> doShift "q"
     , className =? "Psi+"              --> doShift "q"
-    , className =? "Telegram"          --> doShift "q"
     , className =? "Pidgin"            --> doShift "q"
+    , className =? "Telegram"          --> doShift "q"
+    , className =? "TelegramDesktop"   --> doShift "q"
     , className =? "Thunderbird"       --> doShift "w"
+    , className =? "Slack"             --> doShift "w"
+    , className =? "Mattermost"        --> doShift "w"
+
+-- Always float windows
     , className =? "MPlayer"           --> doFloat
     , className =? "zoom"              --> doFloat
     , className =? "Conky"             --> doIgnore

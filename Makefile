@@ -20,4 +20,5 @@ uninstall:
 
 clean:
 	rm -f $(BUILDROOT)/xmonad-x86_64-linux
+	rm -f xmonad.errors
 	$(STACK) clean --full
