@@ -1,4 +1,4 @@
-module EvalPrompt (evalPrompt) where
+module Prompt.Eval (evalPrompt) where
 
 import XMonad
 import XMonad.Prompt
@@ -6,7 +6,7 @@ import Data.List ( intercalate )
 import qualified Language.Haskell.Interpreter  as I
 
 -- Eval prompt.
--- evaluate any haskell expression by pressing mod-shift-x
+-- evaluate any haskell expression
 data EvalPrompt = EvalPrompt
 
 instance XPrompt EvalPrompt where
