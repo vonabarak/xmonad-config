@@ -1,4 +1,4 @@
-module Runner (switch, restart, respawn) where
+module Runner (switch, restart, respawn, sspawn) where
 
 import Crypto.Hash ( hash, MD5, Digest )
 import System.Directory ( removeFile )
@@ -10,6 +10,8 @@ import Control.Exception ( try, SomeException )
 import Control.Exception.Extra ( ignore )
 import Control.Monad.IO.Class ( MonadIO(..) )
 import Data.ByteString.UTF8 as ByteString ( fromString )
+import Data.UUID.V4 (nextRandom)
+import Data.UUID (toString)
 
 switch :: MonadIO m => String -> m ()
 switch command = liftIO $ switch' command
@@ -20,6 +22,8 @@ restart command = liftIO $ restart' command
 respawn :: MonadIO m => String -> m ()
 respawn command = liftIO $ respawn' command
 
+sspawn :: MonadIO m => String -> m ()
+sspawn command = liftIO $ sspawn' command
 
 switch' :: String -> IO()
 switch' command = do
@@ -50,6 +54,13 @@ respawn' command = do
     if isCommandRunning
         then putStrLn $ "Command " ++ command ++ " is already running."
         else spawn command
+
+
+sspawn' :: String -> IO()
+sspawn' command = do
+    uuid <- nextRandom
+    spawnCommand $ "systemd-run --user --scope --slice=\"app.slice\" --unit=\"xmonad-" ++ (toString uuid) ++ "\" " ++ command
+    return ()
 
 
 spawn :: String -> IO()
@@ -96,3 +107,4 @@ getPidFilePath command = do
         exeName = takeFileName $ head $ words command
         commandHash :: Digest MD5
         commandHash = hash $ ByteString.fromString command
+

@@ -16,11 +16,11 @@ import qualified Data.Map        as M
 import Data.List (intercalate)
 
 import EvalPrompt ( evalPrompt )
-import Runner (switch, respawn, restart)
+import Runner (switch, respawn, restart, sspawn)
 
 myKeyMap :: XPConfig -> XConfig Layout -> [(String, X (), String)]
 myKeyMap myXPConfig conf =
-    [ ("M-<Return>"  , spawn $ XMonad.terminal conf  , "Launch a terminal")
+    [ ("M-<Return>"  , sspawn $ XMonad.terminal conf , "Launch a terminal")
     , ("M-<L>"       , nextWS                        , "Switch to next workspace")
     , ("M-<R>"       , prevWS                        , "Switch to prev workspace")
     , ("M-c"         , kill                          , "close focused window")

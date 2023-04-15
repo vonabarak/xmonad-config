@@ -192,7 +192,6 @@ myStartupHook :: X ()
 myStartupHook = do
               setDefaultCursor xC_left_ptr
               setWMName "LG3D"
-              respawn "conky"
               respawn "picom"
 
 myXmobarPP :: Handle -> PP
