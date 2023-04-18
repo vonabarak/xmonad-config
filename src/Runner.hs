@@ -6,6 +6,7 @@ import System.Process ( getPid, spawnCommand, ProcessHandle, readProcessWithExit
 import System.FilePath ( (<.>), (</>), takeFileName )
 import System.Posix
     ( ProcessID, sigKILL, signalProcess, getRealUserID )
+import System.IO.Unsafe (unsafePerformIO)
 import Control.Exception ( try, SomeException )
 import Control.Exception.Extra ( ignore )
 import Control.Monad.IO.Class ( MonadIO(..) )
@@ -14,9 +15,6 @@ import Data.List ( dropWhileEnd )
 import Data.UUID.V4 (nextRandom)
 import Data.UUID (toString)
 import XMonad.Core (installSignalHandlers, uninstallSignalHandlers)
-
-import System.IO.Unsafe (unsafePerformIO)
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 
 switch :: MonadIO m => String -> m ()
 switch command = liftIO $ switch' command
@@ -70,7 +68,9 @@ sspawn' command = do
                 "systemd-run --user --scope --slice=\"app.slice\" --unit=\"xmonad-" ++
                 toString uuid ++ "\" " ++ command
             return ()
-        else spawn command
+        else do
+            _ <- spawnCommand command
+            return ()
 
 
 spawn :: String -> IO()
@@ -122,24 +122,13 @@ getPidFilePath command = do
 -- Function to determine if a system is traditional init or systemd based.
 isSystemd :: Bool
 {-# NOINLINE isSystemd #-}
-isSystemd = unsafePerformIO $ do
-    result <- readIORef cache
-    case lookup 1 result of
-        Just value -> return value
-        Nothing -> do
-            value <- isSystemd'
-            writeIORef cache ((1, value) : result)
-            return value
-  where
-    {-# NOINLINE cache #-}
-    cache :: IORef [(Int, Bool)]
-    cache = unsafePerformIO (newIORef [])
+isSystemd = unsafePerformIO isSystemd'
 
 isSystemd' :: IO Bool
 isSystemd' = do
     uninstallSignalHandlers
     (_, stdout, _) <- readProcessWithExitCode "/bin/ps" ["-c", "-o", "command", "--no-headers", "-p", "1"] ""
-    let procname = dropWhileEnd (\x -> x == '\n') stdout
+    let procname = dropWhileEnd (== '\n') stdout
     putStrLn ("The PID 1 process is \"" ++ procname ++ "\"\n")
     installSignalHandlers
     return (procname == "systemd")
