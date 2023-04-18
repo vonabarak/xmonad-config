@@ -2,6 +2,7 @@ module Prompt.Eval (evalPrompt) where
 
 import XMonad
 import XMonad.Prompt
+    ( mkXPrompt, XPConfig, XPrompt(showXPrompt, commandToComplete) )
 import Data.List ( intercalate )
 import qualified Language.Haskell.Interpreter  as I
 

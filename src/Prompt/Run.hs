@@ -3,7 +3,7 @@ module Prompt.Run
      RunPrompt,
     ) where
 
-import XMonad hiding (config)
+import XMonad ( io, spawn, X )
 import XMonad.Prelude (isNothing, isSuffixOf)
 import XMonad.Prompt
     ( mkXPrompt, XPConfig(searchPredicate), XPrompt(showXPrompt) )

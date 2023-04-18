@@ -210,7 +210,7 @@ main :: IO ()
 main = do
     -- delay 2 sec for plasma to start
     threadDelay 2000000
-    hXmobar <- spawnPipe "xmobar ~/.xmonad/xmobar.hs"
+    hXmobar <- spawnPipe "xmobar"
     xmonad $ ewmh $ docks $ kde4Config {
           terminal           = myTerminal,
           focusFollowsMouse  = myFocusFollowsMouse,

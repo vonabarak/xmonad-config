@@ -1,17 +1,22 @@
-module Runner (switch, restart, respawn, sspawn) where
+module Runner (switch, restart, respawn, sspawn, isSystemd) where
 
 import Crypto.Hash ( hash, MD5, Digest )
 import System.Directory ( removeFile )
-import System.Process ( getPid, spawnCommand, ProcessHandle )
-import System.FilePath
+import System.Process ( getPid, spawnCommand, ProcessHandle, readProcessWithExitCode )
+import System.FilePath ( (<.>), (</>), takeFileName )
 import System.Posix
     ( ProcessID, sigKILL, signalProcess, getRealUserID )
 import Control.Exception ( try, SomeException )
 import Control.Exception.Extra ( ignore )
 import Control.Monad.IO.Class ( MonadIO(..) )
 import Data.ByteString.UTF8 as ByteString ( fromString )
+import Data.List ( dropWhileEnd )
 import Data.UUID.V4 (nextRandom)
 import Data.UUID (toString)
+import XMonad.Core (installSignalHandlers, uninstallSignalHandlers)
+
+import System.IO.Unsafe (unsafePerformIO)
+import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 
 switch :: MonadIO m => String -> m ()
 switch command = liftIO $ switch' command
@@ -58,14 +63,19 @@ respawn' command = do
 
 sspawn' :: String -> IO()
 sspawn' command = do
-    uuid <- nextRandom
-    spawnCommand $ "systemd-run --user --scope --slice=\"app.slice\" --unit=\"xmonad-" ++ (toString uuid) ++ "\" " ++ command
-    return ()
+    if isSystemd
+        then do
+            uuid <- nextRandom
+            _ <- spawnCommand $
+                "systemd-run --user --scope --slice=\"app.slice\" --unit=\"xmonad-" ++
+                toString uuid ++ "\" " ++ command
+            return ()
+        else spawn command
 
 
 spawn :: String -> IO()
 spawn command = spawnCommand command >>= writePid command
-    
+
 
 isRunning :: String -> IO Bool
 isRunning command = do
@@ -108,3 +118,28 @@ getPidFilePath command = do
         commandHash :: Digest MD5
         commandHash = hash $ ByteString.fromString command
 
+
+-- Function to determine if a system is traditional init or systemd based.
+isSystemd :: Bool
+{-# NOINLINE isSystemd #-}
+isSystemd = unsafePerformIO $ do
+    result <- readIORef cache
+    case lookup 1 result of
+        Just value -> return value
+        Nothing -> do
+            value <- isSystemd'
+            writeIORef cache ((1, value) : result)
+            return value
+  where
+    {-# NOINLINE cache #-}
+    cache :: IORef [(Int, Bool)]
+    cache = unsafePerformIO (newIORef [])
+
+isSystemd' :: IO Bool
+isSystemd' = do
+    uninstallSignalHandlers
+    (_, stdout, _) <- readProcessWithExitCode "/bin/ps" ["-c", "-o", "command", "--no-headers", "-p", "1"] ""
+    let procname = dropWhileEnd (\x -> x == '\n') stdout
+    putStrLn ("The PID 1 process is \"" ++ procname ++ "\"\n")
+    installSignalHandlers
+    return (procname == "systemd")

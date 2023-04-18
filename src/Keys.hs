@@ -3,7 +3,6 @@ module Keys ( myKeys ) where
 import XMonad
 import XMonad.Actions.CycleWS ( nextWS, prevWS )
 import XMonad.Prompt ( XPConfig )
-import XMonad.Prompt.RunOrRaise ( runOrRaisePrompt )
 import XMonad.Prompt.XMonad ( xmonadPrompt )
 import XMonad.Prompt.Pass ( passGeneratePrompt, passPrompt )
 import XMonad.Prompt.Ssh ( sshPrompt )
