@@ -192,7 +192,6 @@ myStartupHook :: X ()
 myStartupHook = do
               setDefaultCursor xC_left_ptr
               setWMName "LG3D"
-              respawn "conky"
               respawn "picom"
 
 myXmobarPP :: Handle -> PP
@@ -211,7 +210,7 @@ main :: IO ()
 main = do
     -- delay 2 sec for plasma to start
     threadDelay 2000000
-    hXmobar <- spawnPipe "xmobar ~/.xmonad/xmobar.hs"
+    hXmobar <- spawnPipe "xmobar"
     xmonad $ ewmh $ docks $ kde4Config {
           terminal           = myTerminal,
           focusFollowsMouse  = myFocusFollowsMouse,

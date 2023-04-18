@@ -49,6 +49,7 @@ library:
   - directory
   - cryptonite
   - utf8-string
+  - uuid
 
 executables:
   xmonad:

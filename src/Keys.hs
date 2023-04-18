@@ -3,24 +3,24 @@ module Keys ( myKeys ) where
 import XMonad
 import XMonad.Actions.CycleWS ( nextWS, prevWS )
 import XMonad.Prompt ( XPConfig )
-import XMonad.Prompt.RunOrRaise ( runOrRaisePrompt )
 import XMonad.Prompt.XMonad ( xmonadPrompt )
 import XMonad.Prompt.Pass ( passGeneratePrompt, passPrompt )
 import XMonad.Prompt.Ssh ( sshPrompt )
 import XMonad.Prompt.Zsh ( zshPrompt )
 import XMonad.Actions.NoBorders ( toggleBorder )
 import XMonad.Hooks.ManageDocks ( ToggleStruts(ToggleStruts) )
-import XMonad.Util.EZConfig
+import XMonad.Util.EZConfig ( checkKeymap, mkKeymap )
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
-import Data.List (intercalate)
+import Data.List ( intercalate )
 
-import EvalPrompt ( evalPrompt )
-import Runner (switch, respawn, restart)
+import Prompt.Eval ( evalPrompt )
+import Prompt.Run ( runPrompt )
+import Runner ( switch, sspawn )
 
 myKeyMap :: XPConfig -> XConfig Layout -> [(String, X (), String)]
 myKeyMap myXPConfig conf =
-    [ ("M-<Return>"  , spawn $ XMonad.terminal conf  , "Launch a terminal")
+    [ ("M-<Return>"  , sspawn $ XMonad.terminal conf , "Launch a terminal")
     , ("M-<L>"       , nextWS                        , "Switch to next workspace")
     , ("M-<R>"       , prevWS                        , "Switch to prev workspace")
     , ("M-c"         , kill                          , "close focused window")
@@ -51,12 +51,12 @@ myKeyMap myXPConfig conf =
     , ("M-<F8>"      , spawn "wall Hello!"           , "wall Hello!")
     , ("M-<F9>"      , spawn "meta-f9.sh"            , "meta-f9.sh")
     , ("M-<F12>"     , switch "picom"                , "Switch compositor")
-    , ("M-x"         , runOrRaisePrompt myXPConfig   , "Run or raise prompt")
+    , ("M-x"         , runPrompt          myXPConfig , "Run prompt")
     , ("M-z z"       , zshPrompt'                    , "Zsh prompt")
-    , ("M-z a"       , xmonadPrompt myXPConfig       , "Xmonad prompt")
-    , ("M-z e"       , evalPrompt myXPConfig         , "Haskell evaluation prompt")
-    , ("M-z s"       , sshPrompt myXPConfig          , "Ssh prompt")
-    , ("M-z p"       , passPrompt myXPConfig         , "Pass prompt")
+    , ("M-z a"       , xmonadPrompt       myXPConfig , "Xmonad prompt")
+    , ("M-z e"       , evalPrompt         myXPConfig , "Haskell evaluation prompt")
+    , ("M-z s"       , sshPrompt          myXPConfig , "Ssh prompt")
+    , ("M-z p"       , passPrompt         myXPConfig , "Pass prompt")
     , ("M-z ["       , passGeneratePrompt myXPConfig , "Pass prompt (generate password)")
     , ("M-bad"       , passGeneratePrompt myXPConfig , "Bad keybinding (for test only)")
     ] where
