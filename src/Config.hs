@@ -13,11 +13,6 @@ import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.PerWindowKbdLayout
 import XMonad.Hooks.ServerMode
 import XMonad.Hooks.SetWMName ( setWMName )
-import XMonad.Layout.Fullscreen
-import XMonad.Layout.GridVariants
-import XMonad.Layout.LayoutModifier ( ModifiedLayout )
-import XMonad.Layout.NoBorders
-import XMonad.Layout.PerWorkspace ( onWorkspace )
 import XMonad.Layout.Tabbed
 import XMonad.Prompt
 import XMonad.Util.ClickableWorkspaces (clickablePP)
@@ -30,7 +25,7 @@ import qualified Data.Map        as M
 import ManageHook ( myManageHook )
 import Keys ( myKeys )
 import Runner ( respawn )
-
+import Layout ( myLayout )
 
 
 -- Terminal programm
@@ -113,37 +108,7 @@ myXPConfig = def
     , historyFilter       = deleteConsecutive
 --    , autoComplete        = Nothing
     }
-myLayout = onWorkspace "1" workspace1 $
-           onWorkspace "0" workspace0 $
-           onWorkspace "w" workspaceW $
-           onWorkspace "e" workspaceE $
-           onWorkspace "r" workspaceR $
-           allOthers
-  where
-    -- default tiling algorithm partitions the screen into two panes
-    tiled   = Tall nmaster delta ratio
-    -- The default number of windows in the master pane
-    nmaster = 1
-    -- Default proportion of screen occupied by master pane
-    ratio   = 70/100
-    -- Percent of screen to increment by when resizing panes
-    delta   = 3/100
 
-    tiled'  = avoidStruts $ borders tiled
-    grid    = avoidStruts $ borders $ Grid (16/9)
-    tabbed' = avoidStruts $ noBorders $ tabbed shrinkText myTabConfig
-    full    = avoidStruts $ noBorders Full
-    
-    borders :: LayoutClass l a => l a -> ModifiedLayout (ConfigurableBorder Ambiguity) l a
-    borders = lessBorders Screen
-    --  borders = lessBorders (Combine Union Screen OnlyFloat)
-
-    workspace1 = full
-    workspace0 = noBorders $ fullscreenFull Full
-    workspaceW = tabbed' ||| tiled' ||| grid   ||| full
-    workspaceE = tabbed' ||| tiled' ||| grid   ||| full
-    workspaceR = tabbed' ||| tiled' ||| grid   ||| full
-    allOthers  = tiled'  ||| grid   ||| tabbed'||| full
 
 -- Mouse bindings: default actions bound to mouse events
 myMouseBindings :: XConfig l -> M.Map (KeyMask, Button) (Window -> X ())
@@ -182,7 +147,8 @@ myEventHook event = do
 -- Status bars and logging
 -- Perform an arbitrary action on each internal state change or X event.
 -- See the 'XMonad.Hooks.DynamicLog' extension for examples.
--- myLogHook = return()
+myLogHook :: Handle -> X ()
+myLogHook h = clickablePP (myXmobarPP h) >>= dynamicLogWithPP
 
 -- Startup hook
 -- Perform an arbitrary action each time xmonad starts or is restarted
@@ -202,8 +168,10 @@ myXmobarPP h = xmobarPP
            --, ppHiddenNoWindows = xmobarColor myInactiveColor myBgColor
            , ppTitle = xmobarColor myHlColor myBgColor . shorten 160
            , ppSep = xmobarColor myInactiveColor myBgColor " | "
-           , ppLayout = (\s -> "<action=`xmonadctl next-layout`>" ++ s ++ "</action>") . shorten 9
+           , ppLayout = layoutSwitcher . shorten 9
            }
+        where
+            layoutSwitcher text = "<action=`xmonadctl next-layout`>" ++ text ++ "</action>"
 
 -- Run xmonad with the settings you specify.
 main :: IO ()
@@ -211,7 +179,7 @@ main = do
     -- delay 2 sec for plasma to start
     threadDelay 2000000
     hXmobar <- spawnPipe "xmobar"
-    xmonad $ ewmh $ docks $ kde4Config {
+    xmonad $ ewmh $ docks $ def {
           terminal           = myTerminal,
           focusFollowsMouse  = myFocusFollowsMouse,
           borderWidth        = myBorderWidth,
@@ -223,12 +191,12 @@ main = do
           keys               = myKeys myXPConfig,
           mouseBindings      = myMouseBindings,
 
-          layoutHook         = myLayout,
+          layoutHook         = myLayout myTabConfig,
           -- insertPosition :: Position -> Focus -> ManageHook
           -- Position: Master End Above Below
           -- Focus: Newer Older
           manageHook         = insertPosition Above Newer <+> myManageHook,
           handleEventHook    = myEventHook,
           startupHook        = myStartupHook,
-          logHook = clickablePP (myXmobarPP hXmobar) >>= dynamicLogWithPP
+          logHook            = myLogHook hXmobar
     }

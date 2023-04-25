@@ -41,6 +41,8 @@ myKeyMap myXPConfig conf =
     , ("M-l"         , sendMessage Expand            , "Expand the master area")
     , ("M-g"         , withFocused $ windows . W.sink, "Push floating window back into tiling")
     , ("M-f"         , withFocused float             , "Make window float")
+    , ("M-S-<F8>"    , spawn "picom-trans -c -5"     , "Decrease window opacity")
+    , ("M-S-<F9>"    , spawn "picom-trans -c +5"     , "Increase window opacity")
     , ("M-v"         , withFocused toggleBorder      , "Toggle window border")
     , ("M-."         , sendMessage (IncMasterN 1)    , "Increment the number of windows in the master area")
     , ("M-,"         , sendMessage (IncMasterN (-1)) , "Deincrement the number of windows in the master area")
@@ -61,7 +63,7 @@ myKeyMap myXPConfig conf =
     , ("M-bad"       , passGeneratePrompt myXPConfig , "Bad keybinding (for test only)")
     ] where
         resetLayout = setLayout $ XMonad.layoutHook conf
-        restartXmonad = spawn "xmonad --recompile; xmonad --restart"
+        restartXmonad = spawn "notify-send \"Restarting XMonad\"; xmonad --recompile; xmonad --restart; notify-send \"XMonad restarted\";"
         zshPrompt' = zshPrompt myXPConfig "/home/bobr/.xmonad/capture.zsh"
 
 myKeyMap' :: XPConfig -> XConfig Layout -> [(String, X ())]
