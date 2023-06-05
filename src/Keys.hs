@@ -4,7 +4,6 @@ import XMonad
 import XMonad.Actions.CycleWS ( nextWS, prevWS )
 import XMonad.Prompt ( XPConfig )
 import XMonad.Prompt.XMonad ( xmonadPrompt )
-import XMonad.Prompt.Pass ( passGeneratePrompt, passPrompt )
 import XMonad.Prompt.Ssh ( sshPrompt )
 import XMonad.Prompt.Zsh ( zshPrompt )
 import XMonad.Actions.NoBorders ( toggleBorder )
@@ -14,6 +13,7 @@ import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
 import Data.List ( intercalate )
 
+import Prompt.KeePass ( KeePassConf (..), passPrompt, passUsernamePrompt, passOTPPrompt )
 import Prompt.Eval ( evalPrompt )
 import Prompt.Run ( runPrompt )
 import Runner ( switch, sspawn )
@@ -58,13 +58,22 @@ myKeyMap myXPConfig conf =
     , ("M-z a"       , xmonadPrompt       myXPConfig , "Xmonad prompt")
     , ("M-z e"       , evalPrompt         myXPConfig , "Haskell evaluation prompt")
     , ("M-z s"       , sshPrompt          myXPConfig , "Ssh prompt")
-    , ("M-z p"       , passPrompt         myXPConfig , "Pass prompt")
-    , ("M-z ["       , passGeneratePrompt myXPConfig , "Pass prompt (generate password)")
-    , ("M-bad"       , passGeneratePrompt myXPConfig , "Bad keybinding (for test only)")
+    , ("M-z p"       , passPrompt'                   , "Pass prompt")
+    , ("M-z ["       , passUsernamePrompt'           , "Pass prompt (username)")
+    , ("M-z ]"       , passOTPPrompt'                , "Pass prompt (OTP)")
+    , ("M-bad"       , runPrompt          myXPConfig , "Bad keybinding (to test \"M-z c\" binding)")
     ] where
         resetLayout = setLayout $ XMonad.layoutHook conf
         restartXmonad = spawn "notify-send \"Restarting XMonad\"; xmonad --recompile; xmonad --restart; notify-send \"XMonad restarted\";"
         zshPrompt' = zshPrompt myXPConfig "/home/bobr/.xmonad/capture.zsh"
+        passPrompt' = passPrompt keePassConf
+        passUsernamePrompt' = passUsernamePrompt keePassConf
+        passOTPPrompt' = passOTPPrompt keePassConf
+        keePassConf = def { xpConfig  = myXPConfig
+                          , database  = "/home/bobr/Dropbox/Passwords.kdbx"
+                          , keyfile   = Just "/home/bobr/.password-store/keepassxc.keyx"
+                        --   , password  = Just "test"
+                          }
 
 myKeyMap' :: XPConfig -> XConfig Layout -> [(String, X ())]
 myKeyMap' myXPConfig conf = [(i, j) | (i, j, _) <- myKeyMap myXPConfig conf]
