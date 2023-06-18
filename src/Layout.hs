@@ -12,11 +12,11 @@ import XMonad.Hooks.ManageDocks
 
 
 myLayout myTabConfig = onWorkspace "1" workspace1 $
-           onWorkspace "0" workspace0 $
-           onWorkspace "w" workspaceW $
-           onWorkspace "e" workspaceE $
-           onWorkspace "r" workspaceR $
-           allOthers
+                       onWorkspace "0" workspace0 $
+                       onWorkspace "w" workspaceW $
+                       onWorkspace "e" workspaceE $
+                       onWorkspace "r" workspaceR $
+                       allOthers
   where
     -- default tiling algorithm partitions the screen into two panes
     tiled   = Tall nmaster delta ratio
@@ -36,7 +36,7 @@ myLayout myTabConfig = onWorkspace "1" workspace1 $
     borders = lessBorders Screen
     --  borders = lessBorders (Combine Union Screen OnlyFloat)
 
-    workspace1 = full
+    workspace1 = full ||| tiled'
     workspace0 = noBorders $ fullscreenFull Full
     workspaceW = tabbed' ||| tiled' ||| grid   ||| full
     workspaceE = tabbed' ||| tiled' ||| grid   ||| full

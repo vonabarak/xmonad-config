@@ -50,6 +50,7 @@ library:
   - cryptonite
   - utf8-string
   - uuid
+  - time
 
 executables:
   xmonad:

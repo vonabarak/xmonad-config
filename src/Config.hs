@@ -5,7 +5,7 @@ import Data.Monoid
 import GHC.IO.Handle.Types ( Handle )
 import System.IO ( hPutStrLn )
 import XMonad
-import XMonad.Config.Kde
+import XMonad.Actions.Promote
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.InsertPosition
@@ -15,6 +15,7 @@ import XMonad.Hooks.ServerMode
 import XMonad.Hooks.SetWMName ( setWMName )
 import XMonad.Layout.Tabbed
 import XMonad.Prompt
+import XMonad.Prompt.FuzzyMatch ( fuzzyMatch )
 import XMonad.Util.ClickableWorkspaces (clickablePP)
 import XMonad.Util.Cursor ( setDefaultCursor )
 import XMonad.Util.Run ( spawnPipe )
@@ -26,6 +27,7 @@ import ManageHook ( myManageHook )
 import Keys ( myKeys )
 import Runner ( respawn )
 import Layout ( myLayout )
+import XMonad.Actions.CycleWS
 
 
 -- Terminal programm
@@ -106,6 +108,7 @@ myXPConfig = def
     , position            = Top
     , historySize         = 100000
     , historyFilter       = deleteConsecutive
+    , searchPredicate     = fuzzyMatch
 --    , autoComplete        = Nothing
     }
 
@@ -119,9 +122,10 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList
     -- mod-button2, Raise the window to the top of the stack
     , ((modm, button2), \w -> focus w >> windows W.shiftMaster)
     -- mod-button3, Set the window to floating mode and resize by dragging
-    , ((modm, button3), \w -> focus w >> mouseResizeWindow w 
+    , ((modm, button3), \w -> focus w >> mouseResizeWindow w
                                       >> windows W.shiftMaster)
-    -- you may also bind events to the mouse scroll wheel (button4 and button5)
+    , ((modm, button5), const nextWS)
+    , ((modm, button4), const prevWS)
     ]
 
 
