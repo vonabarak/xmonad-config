@@ -13,10 +13,10 @@ config = defaultConfig
     , persistent = True
     , allDesktops = True
     , overrideRedirect = True
-    , font = "xft:Terminus:size=14:hinting=0:antialias=0"
-    -- , font = "-*-terminus-*-*-*-*-14-*-*-*-*-*-*-1"
-    , additionalFonts = [ "xft:FontAwesome:pixelsize=12"
-                        , "xft:Clockopia:pixelsize=28:hinting=0:antialias=1"
+    , font = "Terminus 14"
+    -- , font = "DejaVu Sans Mono italic 9"
+    , additionalFonts = [ "Noto Sans Mono 12"
+                        , "Clockopia 28"
                         ]
     , commands = [ Run UnsafeStdinReader ]
     , sepChar = "%"

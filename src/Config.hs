@@ -34,9 +34,10 @@ import XMonad.Actions.CycleWS
 myTerminal      = "alacritty"
 
 -- Font
+
 myFont = "xft:terminus:size=18:hinting=0:antialias=1"
 mySmallFont = "xft:noto:size=10:hinting=1:antialias=1"
--- mySmallFont = "xft:terminus:size=10:hinting=0:antialias=1"
+
 
 -- Colors
 myDefaultColor  = "green"

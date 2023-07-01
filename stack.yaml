@@ -19,7 +19,7 @@
 # resolver: https://example.com/snapshots/2018-01-01.yaml
 # resolver: ghc-9.0.2
 # resolver: lts-19.33
-resolver: lts-20.18
+resolver: lts-21.1
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -44,8 +44,9 @@ packages:
 #
 extra-deps:
 # - xmonad-0.17.1
-# - xmonad-contrib-0.17.1
-- xmobar-0.44.1
+- xmonad-contrib-0.17.1
+- xmonad-extras-0.17.0
+- xmobar-0.46
 # - X11-1.10.2
 # - hint-0.9.0.6
 
@@ -54,14 +55,16 @@ extra-deps:
 # flags: {}
 flags:
   xmobar:
-    with_xft: true
-    # all_extensions: true
+    with_xrender: true
+    all_extensions: false
+  xmonad-extras:
+    with_mpd: false
 
 # Extra package databases containing global packages
 # extra-package-dbs: []
 
 # Control whether we use the GHC we find on the path
-# system-ghc: true
+system-ghc: true
 
 # Require a specific version of stack, using version ranges
 # require-stack-version: -any # Default

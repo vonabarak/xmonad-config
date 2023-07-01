@@ -1,7 +1,7 @@
 BUILDROOT := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 INSTALL_PATH ?= ${HOME}/.local/bin
 STACK_YAML ?= $(BUILDROOT)/stack.yaml
-STACK ?= stack --stack-yaml $(STACK_YAML)
+STACK ?= $(INSTALL_PATH)/stack --stack-yaml $(STACK_YAML)
 
 .DEFAULT_GOAL := xmonad-x86_64-linux
 
