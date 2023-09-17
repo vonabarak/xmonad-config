@@ -21,4 +21,5 @@ uninstall:
 clean:
 	rm -f $(BUILDROOT)/xmonad-x86_64-linux
 	rm -f xmonad.errors
+	rm -f xmonad-config.cabal
 	$(STACK) clean --full

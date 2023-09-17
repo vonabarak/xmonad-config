@@ -19,7 +19,8 @@
 # resolver: https://example.com/snapshots/2018-01-01.yaml
 # resolver: ghc-9.0.2
 # resolver: lts-19.33
-resolver: lts-21.1
+resolver: lts-21.7
+# GHC versions by resolvers: https://www.stackage.org/package/ghc/snapshots
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -57,8 +58,12 @@ flags:
   xmobar:
     with_xrender: true
     all_extensions: false
+    with_mpd: false
+    with_alsa: false
   xmonad-extras:
     with_mpd: false
+    with_sound: false
+
 
 # Extra package databases containing global packages
 # extra-package-dbs: []
@@ -80,3 +85,6 @@ system-ghc: true
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+# nix:
+#   enable: true
