@@ -36,15 +36,25 @@ myManageHook = composeAll
     , className =? "Thunderbird"       --> doShift "w"
     , className =? "Slack"             --> doShift "w"
     , className =? "Mattermost"        --> doShift "w"
+    , className =? "teams-for-linux"   --> doShift "w"
+
+-- Zoom
+    , className =? "zoom" --> composeAll
+        [ title   =? "zoom_linux_float_video_window" --> doIgnore      -- mini window
+        , title   =? "Zoom" --> doSink                                 -- video window
+        , title   =? "Zoom Meeting" --> doSink                         -- main window
+        , stringProperty "_NET_WM_NAME" =? "zoom" --> hasBorder False  -- notification popup
+        , doShift "q"
+        , doFloat
+        ]
 
 -- Always float windows
     , className =? "MPlayer"           --> doFloat
-    , className =? "zoom"              --> doFloat
     , className =? "Conky"             --> doIgnore
-    , className =? "Qmmp"              --> hasBorder False -- qmmp changes it's class name 
-    , className =? "qmmp"              --> hasBorder False -- from "qmmp" to "Qmmp" after start
-    , (className =? "qmmp" <&&> title =? "Media Library") --> (doSink <+> hasBorder True)
-    , (className =? "qmmp" <&&> title =? "Qmmp Settings") --> (doSink <+> hasBorder True)
+     -- qmmp changes it's class name from "qmmp" to "Qmmp" after start
+    , (className =? "qmmp" <||> className =? "Qmmp") --> 
+        ((appName =? "player" <||> appName =? "playlist" <||> appName =? "equalizer") -->
+            (doFloat <+> hasBorder False))
     --, (role =? "gimp-toolbox" <||> role =? "gimp-dock") --> doFloat
 
 -- IDE's
@@ -59,6 +69,8 @@ myManageHook = composeAll
     , className =? "plasmashell"       --> doFloat
     , className =? "plasmawindowed"    --> doFloat
     , className =? "krunner"           --> (doFloat <+> hasBorder False)
+    , (className =? "spectacle" <&&> stringProperty "_NET_WM_NAME" =? "Spectacle") --> doIgnore
+    , className =? "spectacle"         --> doFloat
 
 -- LXDE
     , className =? "Lxsession-logout"  --> doIgnore
