@@ -69,9 +69,10 @@ myKeyMap myXPConfig conf =
         passPrompt' = passPrompt keePassConf
         passUsernamePrompt' = passUsernamePrompt keePassConf
         passOTPPrompt' = passOTPPrompt keePassConf
-        keePassConf = def { xpConfig  = myXPConfig
-                          , database  = "/home/bobr/Dropbox/Passwords.kdbx"
-                          , keyfile   = Just "/home/bobr/.password-store/keepassxc.keyx"
+        keePassConf = def { xpConfig    = myXPConfig
+                          , database    = "/home/bobr/Dropbox/Passwords.kdbx"
+                          , keyfile     = Just "/home/bobr/.password-store/keepassxc.keyx"
+                          , clipTimeout = 30
                         --   , password  = Just "test"
                           }
 

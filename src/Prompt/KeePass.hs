@@ -25,26 +25,29 @@ import XMonad.Prompt ( XPrompt
 import Control.Concurrent (forkIO, MVar, newEmptyMVar, tryTakeMVar, putMVar)
 import System.IO.Unsafe (unsafePerformIO)
 import Data.Time.Clock (UTCTime, getCurrentTime, diffUTCTime, NominalDiffTime)
+import Data.List (nub)
 import System.Posix (createSession, forkProcess)
 
 
 data KeePassConf = KeePassConf
-  { exe       :: FilePath
-  , database  :: FilePath
-  , keyfile   :: Maybe FilePath
-  , password  :: Maybe String
-  , extraArgs :: [String]
-  , xpConfig  :: XPConfig
+  { exe         :: FilePath
+  , database    :: FilePath
+  , keyfile     :: Maybe FilePath
+  , password    :: Maybe String
+  , extraArgs   :: [String]
+  , clipTimeout :: Integer
+  , xpConfig    :: XPConfig
   }
 
 instance Default KeePassConf where
   def = KeePassConf
-    { exe       = "/usr/bin/keepassxc-cli"
-    , database  = "Passwords.kdbx"
-    , keyfile   = Nothing
-    , password  = Nothing
-    , extraArgs = []
-    , xpConfig  = def
+    { exe         = "/usr/bin/keepassxc-cli"
+    , database    = "Passwords.kdbx"
+    , keyfile     = Nothing
+    , password    = Nothing
+    , extraArgs   = []
+    , clipTimeout = 10
+    , xpConfig    = def
     }
 
 -- | Return a tuple of command, argv and input string
@@ -52,12 +55,15 @@ instance Default KeePassConf where
 keepassArgv :: KeePassConf -> String -> [String] -> (String, [String], String)
 keepassArgv conf command args =
   case password conf of
-    Just pwd -> (exe conf, [command, database conf] ++ keyfileArgs ++ extraArgs conf ++ args, pwd)
-    Nothing -> (exe conf, [command, database conf, "--no-password"] ++ keyfileArgs ++ extraArgs conf ++ args, [])
+    Just pwd -> (exe conf, [command, database conf] ++ keyfileArgs ++ extraArgs conf ++ args ++ clipTimeoutArgs, pwd)
+    Nothing  -> (exe conf, [command, database conf, "--no-password"] ++ keyfileArgs ++ extraArgs conf ++ args ++ clipTimeoutArgs, [])
   where
     keyfileArgs = case keyfile conf of
       Just value -> ["-k", value]
-      Nothing -> []
+      Nothing    -> []
+    clipTimeoutArgs = case command of
+      "clip"     -> [show (clipTimeout conf)]
+      _          -> []
 
 
 -- | Run keepassxc-cli with given command and arguments and return its output
@@ -67,7 +73,7 @@ keepass' command arguments conf = runProcessWithInput cmd args input
     (cmd, args, input) = keepassArgv conf command arguments
 
 
--- | Fork a process to run keepassxc-cli because it's waithing (10 sec by 
+-- | Fork a process to run keepassxc-cli because it's waiting (10 sec by 
 --   default) for clipboard to be cleared
 keepass :: String -> [String] -> KeePassConf -> IO ()
 keepass command arguments conf = void $ forkProcess $ do
@@ -114,7 +120,7 @@ passOTPPrompt conf = mkPassPrompt "Select OTP" f conf where
 getPasswords' :: KeePassConf -> IO [String]
 getPasswords' conf = do
   out <- keepass' "ls" ["-f", "-R"] conf
-  return $ lines out
+  return $ nub $ lines out
 
 type Cache = MVar (UTCTime, [String])
 cache :: Cache
