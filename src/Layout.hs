@@ -5,6 +5,7 @@ import XMonad.Layout
 import XMonad.Layout.Fullscreen
 import XMonad.Layout.GridVariants
 import XMonad.Layout.Tabbed
+import XMonad.Layout.ThreeColumns
 import XMonad.Layout.NoBorders
 import XMonad.Layout.PerWorkspace ( onWorkspace )
 import XMonad.Layout.LayoutModifier ( ModifiedLayout )
@@ -31,6 +32,7 @@ myLayout myTabConfig = onWorkspace "1" workspace1 $
     grid    = avoidStruts $ borders $ Grid (16/9)
     tabbed' = avoidStruts $ noBorders $ tabbed shrinkText myTabConfig
     full    = avoidStruts $ noBorders Full
+    thrCol  = avoidStruts $ ThreeCol nmaster delta (1/3)
     
     borders :: LayoutClass l a => l a -> ModifiedLayout (ConfigurableBorder Ambiguity) l a
     borders = lessBorders Screen
@@ -41,4 +43,4 @@ myLayout myTabConfig = onWorkspace "1" workspace1 $
     workspaceW = tabbed' ||| tiled' ||| grid   ||| full
     workspaceE = tabbed' ||| tiled' ||| grid   ||| full
     workspaceR = tabbed' ||| tiled' ||| grid   ||| full
-    allOthers  = tiled'  ||| grid   ||| tabbed'||| full
+    allOthers  = tiled'  ||| grid   ||| thrCol ||| tabbed'||| full

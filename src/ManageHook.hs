@@ -11,6 +11,12 @@
 -- To match on the WM_NAME, you can use 'title' in the same way that
 -- 'className' and 'resource' are used below.
 
+-- resource (also known as appName) is the first element in WM_CLASS(STRING)
+-- className is the second element in WM_CLASS(STRING)
+-- title is WM_NAME(STRING)
+-- For example, in WM_CLASS(STRING) = "emacs", "Emacs"
+-- "emacs" is resource (appName), "Emacs" is className. 
+
 module ManageHook ( myManageHook ) where
 
 import XMonad
@@ -23,9 +29,8 @@ myManageHook = composeAll
     [ className =? "firefox"           --> doShift "1"
     , className =? "firefox-esr"       --> doShift "1"
     , className =? "Opera"             --> doShift "1"
-    , className =? "Google-chrome"     --> doShift "1"
     , className =? "Steam"             --> doShift "9"
-    , className =? "dota_linux"        --> doShift "0"
+    , className =? "dota2"             --> (doShift "0" <+> doSink)
     , className =? "xfreerdp"          --> doShift "0"
     , className =? "psi"               --> doShift "q"
     , className =? "Psi-plus"          --> doShift "q"
@@ -37,6 +42,12 @@ myManageHook = composeAll
     , className =? "Slack"             --> doShift "w"
     , className =? "Mattermost"        --> doShift "w"
     , className =? "teams-for-linux"   --> doShift "w"
+
+-- Google Chrome default window and app-mode windows
+    , className =? "Google-chrome" --> composeAll
+        [ appName =? "teams.microsoft.com"  --> doShift "w"
+        , doShift "1"
+        ]
 
 -- Zoom
     , className =? "zoom" --> composeAll
