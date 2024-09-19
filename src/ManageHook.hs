@@ -21,7 +21,7 @@ module ManageHook ( myManageHook ) where
 
 import XMonad
 import XMonad.Layout.NoBorders ( hasBorder )
-import XMonad.Hooks.ManageHelpers ( doSink, isKDETrayWindow )
+import XMonad.Hooks.ManageHelpers ( doSink, isKDETrayWindow, doRaise, doLower )
 import Data.Monoid ( Endo )
 
 myManageHook :: Query (Endo WindowSet)
@@ -60,8 +60,8 @@ myManageHook = composeAll
         ]
 
 -- Always float windows
+    , className =? "Conky"             --> (doIgnore <+> doLower)
     , className =? "MPlayer"           --> doFloat
-    , className =? "Conky"             --> doIgnore
      -- qmmp changes it's class name from "qmmp" to "Qmmp" after start
     , (className =? "qmmp" <||> className =? "Qmmp") --> 
         ((appName =? "player" <||> appName =? "playlist" <||> appName =? "equalizer") -->
@@ -76,8 +76,11 @@ myManageHook = composeAll
 
 -- KDE
     , isKDETrayWindow                  --> doIgnore
-    , (className =? "plasmashell" <&&> title =? "Plasma") --> doIgnore
-    , className =? "plasmashell"       --> doFloat
+    , className =? "plasmashell" --> composeAll
+        [ stringProperty "_NET_WM_NAME" =? "plasmashell" --> (doFloat <+> hasBorder False)
+        , title =? "Desktop @ QRect(0,0 1920x1080) " --> (doIgnore <+> doLower)
+        --, (stringProperty "_NET_WM_NAME" =? "plasmashell"  <||> title =? "plasmashell") --> (doFloat <+> hasBorder False)
+        ]
     , className =? "plasmawindowed"    --> doFloat
     , className =? "krunner"           --> (doFloat <+> hasBorder False)
     , (className =? "spectacle" <&&> stringProperty "_NET_WM_NAME" =? "Spectacle") --> doIgnore
